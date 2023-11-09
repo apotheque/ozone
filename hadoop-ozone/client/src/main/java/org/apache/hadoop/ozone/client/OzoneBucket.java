@@ -1262,7 +1262,9 @@ public class OzoneBucket extends WithMetadata {
 
       if (addedKeyPrefix && statuses.size() > 0) {
         // previous round already include the startKey, so remove it
-        statuses.remove(0);
+        if (!statuses.isEmpty()) {
+          statuses.remove(0);
+        }
       } else {
         setAddedKeyPrefix(true);
       }
