@@ -30,8 +30,11 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+
+import com.google.common.cache.LoadingCache;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hdds.client.ECReplicationConfig;
 import org.apache.hadoop.hdds.client.RatisReplicationConfig;
 import org.apache.hadoop.hdds.client.ReplicationConfig;
@@ -96,6 +99,7 @@ class TestObjectPut {
   private HttpHeaders headers;
   private OzoneBucket bucket;
   private OzoneBucket fsoBucket;
+  private LoadingCache<Pair<String, String>, OzoneKeyDetails> keyDetailsCache;
 
   static Stream<Arguments> argumentsForPutObject() {
     ReplicationConfig ratis3 = RatisReplicationConfig.getInstance(HddsProtos.ReplicationFactor.THREE);
@@ -127,6 +131,9 @@ class TestObjectPut {
 
     headers = mock(HttpHeaders.class);
     objectEndpoint.setHeaders(headers);
+
+    keyDetailsCache = mock(LoadingCache.class);
+    objectEndpoint.setKeyDetailsCache(keyDetailsCache);
 
     String volumeName = config.get(OzoneConfigKeys.OZONE_S3_VOLUME_NAME,
         OzoneConfigKeys.OZONE_S3_VOLUME_NAME_DEFAULT);

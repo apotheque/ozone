@@ -42,11 +42,12 @@ public class BasicOmKeyInfo {
   private ReplicationConfig replicationConfig;
   private boolean isFile;
   private final String eTag;
+  private long updateId;
 
   @SuppressWarnings("parameternumber")
   public BasicOmKeyInfo(String volumeName, String bucketName, String keyName,
                         long dataSize, long creationTime, long modificationTime,
-                        ReplicationConfig replicationConfig, boolean isFile, String eTag) {
+                        ReplicationConfig replicationConfig, boolean isFile, String eTag, long updateId) {
     this.volumeName = volumeName;
     this.bucketName = bucketName;
     this.keyName = keyName;
@@ -56,6 +57,7 @@ public class BasicOmKeyInfo {
     this.replicationConfig = replicationConfig;
     this.isFile = isFile;
     this.eTag = StringUtils.isNotEmpty(eTag) ? eTag : null;
+    this.updateId = updateId;
   }
 
   public String getVolumeName() {
@@ -94,6 +96,10 @@ public class BasicOmKeyInfo {
     return eTag;
   }
 
+  public long getUpdateId() {
+    return updateId;
+  }
+
   /**
    * Builder of BasicOmKeyInfo.
    */
@@ -107,6 +113,7 @@ public class BasicOmKeyInfo {
     private ReplicationConfig replicationConfig;
     private boolean isFile;
     private String eTag;
+    private long updateId;
 
     public Builder setVolumeName(String volumeName) {
       this.volumeName = volumeName;
@@ -153,9 +160,14 @@ public class BasicOmKeyInfo {
       return this;
     }
 
+    public Builder setUpdateId(long updateId) {
+      this.updateId = updateId;
+      return this;
+    }
+    
     public BasicOmKeyInfo build() {
       return new BasicOmKeyInfo(volumeName, bucketName, keyName, dataSize,
-          creationTime, modificationTime, replicationConfig, isFile, eTag);
+          creationTime, modificationTime, replicationConfig, isFile, eTag, updateId);
     }
   }
 
@@ -175,6 +187,7 @@ public class BasicOmKeyInfo {
     if (StringUtils.isNotEmpty(eTag)) {
       builder.setETag(eTag);
     }
+    builder.setUpdateID(updateId);
 
     return builder.build();
   }
@@ -200,7 +213,8 @@ public class BasicOmKeyInfo {
             basicKeyInfo.getFactor(),
             basicKeyInfo.getEcReplicationConfig()))
         .setETag(basicKeyInfo.getETag())
-        .setIsFile(!keyName.endsWith("/"));
+        .setIsFile(!keyName.endsWith("/"))
+        .setUpdateId(basicKeyInfo.getUpdateID());
 
     return builder.build();
   }
@@ -225,7 +239,8 @@ public class BasicOmKeyInfo {
             basicKeyInfo.getFactor(),
             basicKeyInfo.getEcReplicationConfig()))
         .setETag(basicKeyInfo.getETag())
-        .setIsFile(!keyName.endsWith("/"));
+        .setIsFile(!keyName.endsWith("/"))
+        .setUpdateId(basicKeyInfo.getUpdateID());
 
     return builder.build();
   }
@@ -246,7 +261,8 @@ public class BasicOmKeyInfo {
         modificationTime == basicOmKeyInfo.modificationTime &&
         replicationConfig.equals(basicOmKeyInfo.replicationConfig) &&
         Objects.equals(eTag, basicOmKeyInfo.eTag) &&
-        isFile == basicOmKeyInfo.isFile;
+        isFile == basicOmKeyInfo.isFile &&
+        updateId == basicOmKeyInfo.updateId;
   }
 
   public int hashCode() {
@@ -263,6 +279,7 @@ public class BasicOmKeyInfo {
         omKeyInfo.getModificationTime(),
         omKeyInfo.getReplicationConfig(),
         omKeyInfo.isFile(),
-        omKeyInfo.getMetadata().get(ETAG));
+        omKeyInfo.getMetadata().get(ETAG),
+        omKeyInfo.getUpdateID());
   }
 }

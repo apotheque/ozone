@@ -147,7 +147,7 @@ public final class OzoneBucketStub extends OzoneBucket {
                 System.currentTimeMillis(),
                 System.currentTimeMillis(),
                 new ArrayList<>(), finalReplicationCon, metadata, null,
-                () -> readKey(key), true
+                () -> readKey(key), true, 1
             ));
             super.close();
           }
@@ -186,7 +186,7 @@ public final class OzoneBucketStub extends OzoneBucket {
                 System.currentTimeMillis(),
                 System.currentTimeMillis(),
                 new ArrayList<>(), rConfig, objectMetadata, null,
-                null, false
+                null, false, 1
             ));
           }
 
@@ -278,7 +278,8 @@ public final class OzoneBucketStub extends OzoneBucket {
           ozoneKeyDetails.getModificationTime().toEpochMilli(),
           ozoneKeyDetails.getReplicationConfig(),
           ozoneKeyDetails.getMetadata(),
-          ozoneKeyDetails.isFile());
+          ozoneKeyDetails.isFile(),
+          ozoneKeyDetails.getUpdateId());
     } else {
       throw new OMException(ResultCodes.KEY_NOT_FOUND);
     }
@@ -333,7 +334,7 @@ public final class OzoneBucketStub extends OzoneBucket {
               key.getDataSize(),
               key.getCreationTime().getEpochSecond() * 1000,
               key.getModificationTime().getEpochSecond() * 1000,
-              key.getReplicationConfig(), key.isFile());
+              key.getReplicationConfig(), key.isFile(), key.getUpdateId());
         }).collect(Collectors.toList());
 
     if (prevKey != null) {
@@ -457,7 +458,7 @@ public final class OzoneBucketStub extends OzoneBucket {
           System.currentTimeMillis(),
           new ArrayList<>(), getReplicationConfig(),
           keyToMultipartUpload.get(key).getMetadata(), null,
-          () -> readKey(key), true
+          () -> readKey(key), true, 1
       ));
     }
 
@@ -605,7 +606,7 @@ public final class OzoneBucketStub extends OzoneBucket {
         System.currentTimeMillis(),
         System.currentTimeMillis(),
         new ArrayList<>(), replicationConfig, new HashMap<>(), null,
-        () -> readKey(keyName), false));
+        () -> readKey(keyName), false, 1));
   }
 
   private void assertDoesNotExist(String keyName) throws OMException {

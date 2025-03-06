@@ -27,13 +27,18 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.ExecutionException;
 
+import com.google.common.cache.LoadingCache;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hdds.conf.OzoneConfiguration;
 import org.apache.hadoop.ozone.client.OzoneBucket;
 import org.apache.hadoop.ozone.client.OzoneClient;
 import org.apache.hadoop.ozone.client.OzoneClientStub;
+import org.apache.hadoop.ozone.client.OzoneKeyDetails;
 import org.apache.hadoop.ozone.client.io.OzoneInputStream;
 import org.apache.hadoop.ozone.client.io.OzoneOutputStream;
+import org.apache.hadoop.ozone.s3.OzoneCacheHolder;
 import org.apache.hadoop.ozone.s3.exception.OS3Exception;
 
 import org.apache.commons.io.IOUtils;
@@ -68,6 +73,8 @@ public class TestObjectGet {
       + "filename=\"filename.jpg\"";
   public static final String CONTENT_ENCODING1 = "gzip";
   public static final String CONTENT_ENCODING2 = "compress";
+  public static final String BUCKET_NAME = "b1";
+  public static final String KEY_NAME = "key1";
 
   private HttpHeaders headers;
   private ObjectEndpoint rest;
@@ -91,6 +98,12 @@ public class TestObjectGet {
     headers = Mockito.mock(HttpHeaders.class);
     rest.setHeaders(headers);
 
+    OzoneCacheHolder cacheHolder = new OzoneCacheHolder();
+
+    LoadingCache<Pair<String, String>, OzoneKeyDetails> keyDetailsCache =
+        cacheHolder.createCache(client, new OzoneConfiguration());
+    rest.setKeyDetailsCache(keyDetailsCache);
+
     context = Mockito.mock(ContainerRequestContext.class);
     Mockito.when(context.getUriInfo()).thenReturn(Mockito.mock(UriInfo.class));
     Mockito.when(context.getUriInfo().getQueryParameters())
@@ -99,7 +112,7 @@ public class TestObjectGet {
   }
 
   @Test
-  public void get() throws IOException, OS3Exception {
+  public void get() throws IOException, OS3Exception, ExecutionException {
     //WHEN
     Response response = rest.get("b1", "key1", 0, null, 0, null);
 
@@ -120,7 +133,7 @@ public class TestObjectGet {
   }
 
   @Test
-  public void inheritRequestHeader() throws IOException, OS3Exception {
+  public void inheritRequestHeader() throws IOException, OS3Exception, ExecutionException {
     setDefaultHeader();
 
     Response response = rest.get("b1", "key1", 0, null, 0, null);
@@ -140,7 +153,7 @@ public class TestObjectGet {
   }
 
   @Test
-  public void overrideResponseHeader() throws IOException, OS3Exception {
+  public void overrideResponseHeader() throws IOException, OS3Exception, ExecutionException {
     setDefaultHeader();
 
     MultivaluedHashMap<String, String> queryParameter =
@@ -173,7 +186,7 @@ public class TestObjectGet {
   }
 
   @Test
-  public void getRangeHeader() throws IOException, OS3Exception {
+  public void getRangeHeader() throws IOException, OS3Exception, ExecutionException {
     Response response;
     Mockito.when(headers.getHeaderString(RANGE_HEADER)).thenReturn("bytes=0-0");
 
@@ -192,7 +205,7 @@ public class TestObjectGet {
   }
 
   @Test
-  public void getStatusCode() throws IOException, OS3Exception {
+  public void getStatusCode() throws IOException, OS3Exception, ExecutionException {
     Response response;
     response = rest.get("b1", "key1", 0, null, 0, null);
     assertEquals(response.getStatus(),
@@ -242,4 +255,5 @@ public class TestObjectGet {
     assertEquals(NO_SUCH_KEY.getCode(), ex.getCode());
     bucket.deleteKey(keyPath);
   }
+
 }
