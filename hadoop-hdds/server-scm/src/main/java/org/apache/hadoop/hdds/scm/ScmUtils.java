@@ -253,6 +253,9 @@ public final class ScmUtils {
 
   public static Map<String, String> getDcMapping(ConfigurationSource conf) {
     final String dcMappingStr = conf.get(OZONE_SCM_DC_DATANODE_MAPPING_KEY, OZONE_SCM_DC_DATANODE_MAPPING_DEFAULT);
+    if (dcMappingStr == null || dcMappingStr.trim().isEmpty()) {
+      return Collections.emptyMap();
+    }
     return Arrays.stream(dcMappingStr.split(","))
         .map(s -> s.split("=", 2))
         .collect(Collectors.toMap(parts -> parts[0], parts -> parts[1]));
