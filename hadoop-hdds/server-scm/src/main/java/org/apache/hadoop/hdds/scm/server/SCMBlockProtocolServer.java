@@ -184,7 +184,7 @@ public class SCMBlockProtocolServer implements
       long size, int num,
       ReplicationConfig replicationConfig,
       String owner, ExcludeList excludeList,
-      String clientMachine
+      String clientMachine, String datacenters
   ) throws IOException {
     Map<String, String> auditMap = Maps.newHashMap();
     auditMap.put("size", String.valueOf(size));
@@ -201,7 +201,7 @@ public class SCMBlockProtocolServer implements
     try {
       for (int i = 0; i < num; i++) {
         AllocatedBlock block = scm.getScmBlockManager()
-            .allocateBlock(size, replicationConfig, owner, excludeList);
+            .allocateBlock(size, replicationConfig, owner, excludeList, datacenters);
         if (block != null) {
           // Sort the datanodes if client machine is specified
           final Node client = getClientNode(clientMachine);

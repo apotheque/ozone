@@ -89,6 +89,7 @@ public final class ContainerInfo implements Comparable<ContainerInfo> {
   // The sequenceId of a close container cannot change, and all the
   // container replica should have the same sequenceId.
   private long sequenceId;
+  private String datacenters;
 
   @SuppressWarnings("parameternumber")
   private ContainerInfo(
@@ -115,6 +116,7 @@ public final class ContainerInfo implements Comparable<ContainerInfo> {
     this.sequenceId = sequenceId;
     this.replicationConfig = repConfig;
     this.clock = clock;
+    datacenters = b.datacenters;
   }
 
   public static ContainerInfo fromProtobuf(HddsProtos.ContainerInfoProto info) {
@@ -131,6 +133,7 @@ public final class ContainerInfo implements Comparable<ContainerInfo> {
         .setDeleteTransactionId(info.getDeleteTransactionId())
         .setReplicationConfig(config)
         .setSequenceId(info.getSequenceId())
+        .setDatacenters(info.getDatacenters())
         .build();
 
     if (info.hasPipelineID()) {
@@ -229,6 +232,10 @@ public final class ContainerInfo implements Comparable<ContainerInfo> {
     return sequenceId;
   }
 
+  public String getDatacenters() {
+    return datacenters;
+  }
+
   public void updateDeleteTransactionId(long transactionId) {
     deleteTransactionId = max(transactionId, deleteTransactionId);
   }
@@ -267,7 +274,8 @@ public final class ContainerInfo implements Comparable<ContainerInfo> {
         .setDeleteTransactionId(getDeleteTransactionId())
         .setOwner(getOwner())
         .setSequenceId(getSequenceId())
-        .setReplicationType(getReplicationType());
+        .setReplicationType(getReplicationType())
+        .setDatacenters(getDatacenters());
 
     if (replicationConfig instanceof ECReplicationConfig) {
       builder.setEcReplicationConfig(((ECReplicationConfig) replicationConfig)
@@ -383,6 +391,7 @@ public final class ContainerInfo implements Comparable<ContainerInfo> {
     private long sequenceId;
     private PipelineID pipelineID;
     private ReplicationConfig replicationConfig;
+    private String datacenters;
 
     public Builder setPipelineID(PipelineID pipelineId) {
       this.pipelineID = pipelineId;
@@ -441,6 +450,11 @@ public final class ContainerInfo implements Comparable<ContainerInfo> {
     public Builder setClock(Clock clock) {
       this.clock = clock;
       this.stateEnterTime = clock.millis();
+      return this;
+    }
+
+    public Builder setDatacenters(String datacenters) {
+      this.datacenters = datacenters;
       return this;
     }
 

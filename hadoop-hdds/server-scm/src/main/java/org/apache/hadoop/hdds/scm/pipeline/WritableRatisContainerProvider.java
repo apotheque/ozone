@@ -29,6 +29,7 @@ import org.apache.hadoop.hdds.scm.container.ContainerInfo;
 import org.apache.hadoop.hdds.scm.container.ContainerManager;
 import org.apache.hadoop.hdds.scm.container.common.helpers.ExcludeList;
 import org.apache.hadoop.hdds.scm.exceptions.SCMException;
+import org.apache.hadoop.hdds.scm.node.NodeManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,21 +51,27 @@ public class WritableRatisContainerProvider
   private final PipelineManager pipelineManager;
   private final PipelineChoosePolicy pipelineChoosePolicy;
   private final ContainerManager containerManager;
+  private final Map<String, String> dcMapping;
+  private final NodeManager scmNodeManager;
 
   public WritableRatisContainerProvider(ConfigurationSource conf,
       PipelineManager pipelineManager,
       ContainerManager containerManager,
-      PipelineChoosePolicy pipelineChoosePolicy) {
+      PipelineChoosePolicy pipelineChoosePolicy,
+      NodeManager scmNodeManager,
+      Map<String, String> dcMapping) {
     this.conf = conf;
     this.pipelineManager = pipelineManager;
     this.containerManager = containerManager;
     this.pipelineChoosePolicy = pipelineChoosePolicy;
+    this.dcMapping = dcMapping;
+    this.scmNodeManager = scmNodeManager;
   }
 
 
   @Override
   public ContainerInfo getContainer(final long size,
-      ReplicationConfig repConfig, String owner, ExcludeList excludeList)
+      ReplicationConfig repConfig, String owner, ExcludeList excludeList, String datacenters)
       throws IOException {
     /*
       Here is the high level logic.
@@ -89,7 +96,7 @@ public class WritableRatisContainerProvider
         PipelineRequestInformation.Builder.getBuilder().setSize(size).build();
 
     ContainerInfo containerInfo =
-        getContainer(repConfig, owner, excludeList, req);
+        getContainer(repConfig, owner, excludeList, req, datacenters);
     if (containerInfo != null) {
       return containerInfo;
     }
@@ -97,7 +104,15 @@ public class WritableRatisContainerProvider
     try {
       // TODO: #CLUTIL Remove creation logic when all replication types
       //  and factors are handled by pipeline creator
-      Pipeline pipeline = pipelineManager.createPipeline(repConfig);
+      // exclude nodes from other dcs
+      List<DatanodeDetails> excludedNodes = Collections.emptyList();
+      if (datacenters != null && !datacenters.isEmpty()) {
+        excludedNodes = getExcludedNodesByDc(scmNodeManager.getAllNodes(), datacenters);
+        LOG.info("Excluded nodes: {}", excludedNodes.stream().map(dn -> dn.getPort(DatanodeDetails.Port.Name.RATIS)));
+      }
+      // TODO: why is pipeline created without accounting for excludeList???
+      Pipeline pipeline = pipelineManager.createPipeline(repConfig, excludedNodes, Collections.emptyList());
+      LOG.info("Created pipeline with nodes: {}", pipeline.getNodes());
 
       // wait until pipeline is ready
       pipelineManager.waitPipelineReady(pipeline.getId(), 0);
@@ -135,7 +150,7 @@ public class WritableRatisContainerProvider
 
     // If Exception occurred or successful creation of pipeline do one
     // final try to fetch pipelines.
-    containerInfo = getContainer(repConfig, owner, excludeList, req);
+    containerInfo = getContainer(repConfig, owner, excludeList, req, datacenters);
     if (containerInfo != null) {
       return containerInfo;
     }
@@ -152,7 +167,7 @@ public class WritableRatisContainerProvider
 
   @Nullable
   private ContainerInfo getContainer(ReplicationConfig repConfig, String owner,
-      ExcludeList excludeList, PipelineRequestInformation req) {
+      ExcludeList excludeList, PipelineRequestInformation req, String datacenters) {
     // Acquire pipeline manager lock, to avoid any updates to pipeline
     // while allocate container happens. This is to avoid scenario like
     // mentioned in HDDS-5655.
@@ -160,7 +175,7 @@ public class WritableRatisContainerProvider
     try {
       List<Pipeline> availablePipelines = findPipelinesByState(repConfig,
           excludeList, Pipeline.PipelineState.OPEN);
-      return selectContainer(availablePipelines, req, owner, excludeList);
+      return selectContainer(availablePipelines, req, owner, excludeList, datacenters);
     } finally {
       pipelineManager.releaseReadLock();
     }
@@ -183,15 +198,23 @@ public class WritableRatisContainerProvider
 
   private @Nullable ContainerInfo selectContainer(
       List<Pipeline> availablePipelines, PipelineRequestInformation req,
-      String owner, ExcludeList excludeList) {
+      String owner, ExcludeList excludeList, String datacenters) {
 
     while (!availablePipelines.isEmpty()) {
       Pipeline pipeline = pipelineChoosePolicy.choosePipeline(
           availablePipelines, req);
+      // pipeline must only use allowed datacenters
+      if (datacenters != null && !datacenters.isEmpty()) {
+        List<DatanodeDetails> excludedNodes = getExcludedNodesByDc(pipeline.getNodes(), datacenters);
+        if (!excludedNodes.isEmpty()) {
+          // there are nodes in pipeline besides allowed
+          return null;
+        }
+      }
 
       // look for OPEN containers that match the criteria.
       final ContainerInfo containerInfo = containerManager.getMatchingContainer(
-          req.getSize(), owner, pipeline, excludeList.getContainerIds());
+          req.getSize(), owner, pipeline, excludeList.getContainerIds(), datacenters);
 
       if (containerInfo != null) {
         return containerInfo;
@@ -201,6 +224,18 @@ public class WritableRatisContainerProvider
     }
 
     return null;
+  }
+
+  private List<DatanodeDetails> getExcludedNodesByDc(List<DatanodeDetails> nodes, String datacenters) {
+    Set<String> allowedDcs = Arrays.stream(datacenters.split(","))
+        .collect(Collectors.toSet());
+    return nodes.stream()
+        .filter(node -> {
+          String nodeDc = dcMapping.get(node.getHostName() + ":" +
+              node.getPort(DatanodeDetails.Port.Name.RATIS).getValue());
+          return !allowedDcs.contains(nodeDc);
+        })
+        .collect(Collectors.toList());
   }
 
 }

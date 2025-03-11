@@ -120,7 +120,7 @@ class TestSafeMode {
           RatisReplicationConfig.getInstance(THREE);
       assertThrows(IOException.class, () -> cluster.getStorageContainerManager()
           .getWritableContainerFactory()
-          .getContainer(MB, replication, OZONE, new ExcludeList()));
+          .getContainer(MB, replication, OZONE, new ExcludeList(), null));
     } finally {
       IOUtils.closeQuietly(fs);
     }

@@ -59,6 +59,10 @@ public class CreateBucketHandler extends BucketHandler {
               " user if not specified")
   private String ownerName;
 
+  @Option(names = {"--datacenters", "-dc"},
+      description = "Comma-separated list of datacenters to store the bucket in")
+  private String datacenters;
+
   enum AllowedBucketLayouts { FILE_SYSTEM_OPTIMIZED, OBJECT_STORE, LEGACY }
 
   @Option(names = { "--layout", "-l" },
@@ -94,6 +98,10 @@ public class CreateBucketHandler extends BucketHandler {
 
     if (isGdprEnforced != null) {
       bb.addMetadata(OzoneConsts.GDPR_FLAG, String.valueOf(isGdprEnforced));
+    }
+
+    if (datacenters != null && !datacenters.isEmpty()) {
+      bb.addMetadata(OzoneConsts.DATACENTERS, datacenters);
     }
 
     if (bekName != null) {

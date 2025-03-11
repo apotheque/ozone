@@ -225,7 +225,7 @@ public class ContainerManagerImpl implements ContainerManager {
 
   private ContainerInfo createContainer(Pipeline pipeline, String owner)
       throws IOException {
-    final ContainerInfo containerInfo = allocateContainer(pipeline, owner);
+    final ContainerInfo containerInfo = allocateContainer(pipeline, owner, null);
     if (LOG.isTraceEnabled()) {
       LOG.trace("New container allocated: {}", containerInfo);
     }
@@ -233,7 +233,7 @@ public class ContainerManagerImpl implements ContainerManager {
   }
 
   private ContainerInfo allocateContainer(final Pipeline pipeline,
-                                          final String owner)
+                                          final String owner, final String datacenters)
       throws IOException {
     final long uniqueId = sequenceIdGen.getNextId(CONTAINER_ID);
     Preconditions.checkState(uniqueId > 0,
@@ -250,7 +250,8 @@ public class ContainerManagerImpl implements ContainerManager {
         .setOwner(owner)
         .setContainerID(containerID.getId())
         .setDeleteTransactionId(0)
-        .setReplicationType(pipeline.getType());
+        .setReplicationType(pipeline.getType())
+        .setDatacenters(datacenters);
 
     if (pipeline.getReplicationConfig() instanceof ECReplicationConfig) {
       containerInfoBuilder.setEcReplicationConfig(
@@ -335,21 +336,21 @@ public class ContainerManagerImpl implements ContainerManager {
 
   @Override
   public ContainerInfo getMatchingContainer(final long size, final String owner,
-      final Pipeline pipeline, final Set<ContainerID> excludedContainerIDs) {
+      final Pipeline pipeline, final Set<ContainerID> excludedContainerIDs, final String datacenters) {
     NavigableSet<ContainerID> containerIDs;
     ContainerInfo containerInfo;
     try {
       synchronized (pipeline.getId()) {
-        containerIDs = getContainersForOwner(pipeline, owner);
+        containerIDs = getContainersForOwnerAndDcs(pipeline, owner, datacenters);
         if (containerIDs.size() < getOpenContainerCountPerPipeline(pipeline)) {
-          allocateContainer(pipeline, owner);
-          containerIDs = getContainersForOwner(pipeline, owner);
+          allocateContainer(pipeline, owner, datacenters);
+          containerIDs = getContainersForOwnerAndDcs(pipeline, owner, datacenters);
         }
         containerIDs.removeAll(excludedContainerIDs);
         containerInfo = containerStateManager.getMatchingContainer(
             size, owner, pipeline.getId(), containerIDs);
         if (containerInfo == null) {
-          containerInfo = allocateContainer(pipeline, owner);
+          containerInfo = allocateContainer(pipeline, owner, datacenters);
         }
         return containerInfo;
       }
@@ -368,20 +369,22 @@ public class ContainerManagerImpl implements ContainerManager {
   }
 
   /**
-   * Returns the container ID's matching with specified owner.
+   * Returns the container ID's matching with specified owner and allowed datacenters.
    * @param pipeline
    * @param owner
+   * @param datacenters
    * @return NavigableSet<ContainerID>
    */
-  private NavigableSet<ContainerID> getContainersForOwner(
-      Pipeline pipeline, String owner) throws IOException {
+  private NavigableSet<ContainerID> getContainersForOwnerAndDcs(
+      Pipeline pipeline, String owner, String datacenters) throws IOException {
     NavigableSet<ContainerID> containerIDs =
         pipelineManager.getContainersInPipeline(pipeline.getId());
     Iterator<ContainerID> containerIDIterator = containerIDs.iterator();
     while (containerIDIterator.hasNext()) {
       ContainerID cid = containerIDIterator.next();
       try {
-        if (!getContainer(cid).getOwner().equals(owner)) {
+        ContainerInfo containerInfo = getContainer(cid);
+        if (!containerInfo.getOwner().equals(owner) || !containerInfo.getDatacenters().equals(datacenters)) {
           containerIDIterator.remove();
         }
       } catch (ContainerNotFoundException e) {

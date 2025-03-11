@@ -219,7 +219,8 @@ public class TestKeyManagerImpl {
             any(ReplicationConfig.class),
             Mockito.anyString(),
             any(ExcludeList.class),
-            Mockito.anyString())).thenThrow(
+            Mockito.anyString(),
+            null)).thenThrow(
                 new SCMException("SafeModePrecheck failed for allocateBlock",
             ResultCodes.SAFE_MODE_EXCEPTION));
     createVolume(VOLUME_NAME);

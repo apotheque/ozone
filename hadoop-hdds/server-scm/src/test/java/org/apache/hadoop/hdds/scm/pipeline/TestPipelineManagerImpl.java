@@ -889,7 +889,7 @@ public class TestPipelineManagerImpl {
     doThrow(SCMException.class).when(pipelineManagerSpy)
         .createPipeline(any(), any(), anyList());
     provider = new WritableRatisContainerProvider(
-        conf, pipelineManagerSpy, containerManager, pipelineChoosingPolicy);
+        conf, pipelineManagerSpy, containerManager, pipelineChoosingPolicy, nodeManager, null);
 
     // Add a single pipeline to manager, (in the allocated state)
     allocatedPipeline = pipelineManager.createPipeline(repConfig);
@@ -905,7 +905,7 @@ public class TestPipelineManagerImpl {
     pipelineManager.addContainerToPipeline(
         allocatedPipeline.getId(), container.containerID());
     doReturn(container).when(containerManager).getMatchingContainer(anyLong(),
-        anyString(), eq(allocatedPipeline), any());
+        anyString(), eq(allocatedPipeline), any(), null);
 
 
     Assertions.assertTrue(pipelineManager.getPipelines(repConfig,  OPEN)
@@ -929,7 +929,7 @@ public class TestPipelineManagerImpl {
 
     
     ContainerInfo c = provider.getContainer(1, repConfig,
-        owner, new ExcludeList());
+        owner, new ExcludeList(), null);
     Assertions.assertTrue(c.equals(container),
         "Expected container was returned");
 

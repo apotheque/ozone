@@ -100,7 +100,7 @@ public class TestSCMBlockProtocolServer {
     @Override
     public AllocatedBlock allocateBlock(long size,
         ReplicationConfig replicationConfig, String owner,
-        ExcludeList excludeList) throws IOException, TimeoutException {
+        ExcludeList excludeList, String datacenters) throws IOException, TimeoutException {
       List<DatanodeDetails> nodes = new ArrayList<>(datanodes);
       Collections.shuffle(nodes);
       Pipeline pipeline;
@@ -311,7 +311,7 @@ public class TestSCMBlockProtocolServer {
 
     List<AllocatedBlock> allocatedBlocks = server.allocateBlock(
         blockSize, numOfBlocks, replicationConfig, "o",
-        new ExcludeList(), clientAddress);
+        new ExcludeList(), clientAddress, null);
     Assertions.assertEquals(numOfBlocks, allocatedBlocks.size());
     for (AllocatedBlock allocatedBlock: allocatedBlocks) {
       List<DatanodeDetails> nodesInOrder =
