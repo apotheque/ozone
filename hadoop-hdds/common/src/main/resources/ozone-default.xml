@@ -4553,4 +4553,15 @@
       allowing for better identification and analysis of performance issues.
     </description>
   </property>
+
+  <property>
+    <name>ozone.scm.dc.datanode.mapping</name>
+    <value></value>
+    <tag>SCM</tag>
+    <description>
+      This setting maps each DataNode to its data center using a comma-separated list of
+      hostname:ratis_port=*dc_name* pairs. It enables Ozone to associate DataNodes with specific data centers,
+      optimizing storage management.
+    </description>
+  </property>
 </configuration>
