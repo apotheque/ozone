@@ -90,7 +90,7 @@ public final class ContainerInfo implements Comparable<ContainerInfo> {
   // The sequenceId of a close container cannot change, and all the
   // container replica should have the same sequenceId.
   private long sequenceId;
-  private String datacenters;
+  private final String datacenters;
 
   private ContainerInfo(Builder b) {
     containerID = ContainerID.valueOf(b.containerID);
@@ -122,11 +122,13 @@ public final class ContainerInfo implements Comparable<ContainerInfo> {
         .setDeleteTransactionId(info.getDeleteTransactionId())
         .setReplicationConfig(config)
         .setSequenceId(info.getSequenceId())
-        .setDatacenters(info.getDatacenters())
         .build();
 
     if (info.hasPipelineID()) {
       builder.setPipelineID(PipelineID.getFromProtobuf(info.getPipelineID()));
+    }
+    if (info.hasDatacenters()) {
+      builder.setDatacenters(info.getDatacenters());
     }
     return builder.build();
 
