@@ -701,7 +701,7 @@ public class TestOmContainerLocationCache {
             anyString(),
             any(ExcludeList.class),
             anyString(),
-            null))
+            isNull()))
         .thenReturn(Collections.singletonList(block));
   }
 
@@ -718,7 +718,7 @@ public class TestOmContainerLocationCache {
             anyString(),
             any(ExcludeList.class),
             anyString(),
-            null))
+            isNull()))
         .thenReturn(Collections.singletonList(block));
   }
 

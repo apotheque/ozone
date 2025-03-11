@@ -220,7 +220,7 @@ public class TestKeyManagerImpl {
             Mockito.anyString(),
             any(ExcludeList.class),
             Mockito.anyString(),
-            null)).thenThrow(
+            isNull())).thenThrow(
                 new SCMException("SafeModePrecheck failed for allocateBlock",
             ResultCodes.SAFE_MODE_EXCEPTION));
     createVolume(VOLUME_NAME);
