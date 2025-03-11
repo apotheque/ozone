@@ -100,7 +100,7 @@ public class OMAllocateBlockRequest extends OMKeyRequest {
 
     OmBucketInfo omBucketInfo = getBucketInfo(ozoneManager.getMetadataManager(), keyArgs.getVolumeName(),
         keyArgs.getBucketName());
-    String datacenters = omBucketInfo.getMetadata().get(OzoneConsts.DATACENTERS);
+    String datacenters = omBucketInfo != null ? omBucketInfo.getMetadata().get(OzoneConsts.DATACENTERS) : null;
 
     // TODO: Here we are allocating block with out any check for key exist in
     //  open table or not and also with out any authorization checks.
@@ -152,10 +152,10 @@ public class OMAllocateBlockRequest extends OMKeyRequest {
   public OMClientResponse validateAndUpdateCache(OzoneManager ozoneManager,
       long trxnLogIndex) {
 
-    OzoneManagerProtocolProtos.AllocateBlockRequest allocateBlockRequest =
+    AllocateBlockRequest allocateBlockRequest =
         getOmRequest().getAllocateBlockRequest();
 
-    OzoneManagerProtocolProtos.KeyArgs keyArgs =
+    KeyArgs keyArgs =
         allocateBlockRequest.getKeyArgs();
 
     OzoneManagerProtocolProtos.KeyLocation blockLocation =
