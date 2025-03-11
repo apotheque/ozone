@@ -905,7 +905,7 @@ public class TestPipelineManagerImpl {
     pipelineManager.addContainerToPipeline(
         allocatedPipeline.getId(), container.containerID());
     doReturn(container).when(containerManager).getMatchingContainer(anyLong(),
-        anyString(), eq(allocatedPipeline), any(), null);
+        anyString(), eq(allocatedPipeline), any(), isNull());
 
 
     Assertions.assertTrue(pipelineManager.getPipelines(repConfig,  OPEN)
