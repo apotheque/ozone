@@ -96,6 +96,10 @@ public class OMAllocateBlockRequest extends OMKeyRequest {
           ExcludeList.getFromProtoBuf(allocateBlockRequest.getExcludeList());
     }
 
+    OmBucketInfo omBucketInfo = getBucketInfo(ozoneManager.getMetadataManager(), keyArgs.getVolumeName(),
+        keyArgs.getBucketName());
+    String datacenters = omBucketInfo.getMetadata().get(OzoneConsts.DATACENTERS);
+
     // TODO: Here we are allocating block with out any check for key exist in
     //  open table or not and also with out any authorization checks.
     //  Assumption here is that allocateBlocks with out openKey will be less.
@@ -117,7 +121,7 @@ public class OMAllocateBlockRequest extends OMKeyRequest {
             ozoneManager.getPreallocateBlocksMax(),
             ozoneManager.isGrpcBlockTokenEnabled(),
             ozoneManager.getOMServiceId(), ozoneManager.getMetrics(),
-            keyArgs.getSortDatanodes(), userInfo);
+            keyArgs.getSortDatanodes(), datacenters, userInfo);
 
     // Set modification time and normalize key if required.
     KeyArgs.Builder newKeyArgs =

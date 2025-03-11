@@ -33,6 +33,7 @@ import org.apache.hadoop.hdds.client.ReplicationConfig;
 import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
 import org.apache.hadoop.hdds.scm.container.common.helpers.ExcludeList;
 import org.apache.hadoop.hdds.utils.UniqueId;
+import org.apache.hadoop.ozone.OzoneConsts;
 import org.apache.hadoop.ozone.OzoneManagerVersion;
 import org.apache.hadoop.ozone.audit.OMAction;
 import org.apache.hadoop.ozone.om.OMMetadataManager;
@@ -127,6 +128,7 @@ public class OMKeyCreateRequest extends OMKeyRequest {
 
       final OmBucketInfo bucketInfo = ozoneManager
           .getBucketInfo(keyArgs.getVolumeName(), keyArgs.getBucketName());
+      final String datacenters = bucketInfo.getMetadata().get(OzoneConsts.DATACENTERS);
       final ReplicationConfig repConfig = OzoneConfigUtil
           .resolveReplicationConfigPreference(type, factor,
               keyArgs.getEcReplicationConfig(),
@@ -147,6 +149,7 @@ public class OMKeyCreateRequest extends OMKeyRequest {
               ozoneManager.getOMServiceId(),
               ozoneManager.getMetrics(),
               keyArgs.getSortDatanodes(),
+              datacenters,
               userInfo);
 
       newKeyArgs = keyArgs.toBuilder().setModificationTime(Time.now())

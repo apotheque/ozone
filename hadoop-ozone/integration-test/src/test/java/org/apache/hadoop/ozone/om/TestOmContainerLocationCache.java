@@ -723,7 +723,8 @@ public class TestOmContainerLocationCache {
             any(ReplicationConfig.class),
             anyString(),
             any(ExcludeList.class),
-            anyString()))
+            anyString(),
+            null))
         .thenReturn(Collections.singletonList(block));
   }
 
@@ -739,7 +740,8 @@ public class TestOmContainerLocationCache {
             any(ECReplicationConfig.class),
             anyString(),
             any(ExcludeList.class),
-            anyString()))
+            anyString(),
+            null))
         .thenReturn(Collections.singletonList(block));
   }
 

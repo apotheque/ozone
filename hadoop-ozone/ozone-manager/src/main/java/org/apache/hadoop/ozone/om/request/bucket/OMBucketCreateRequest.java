@@ -288,8 +288,8 @@ public class OMBucketCreateRequest extends OMClientRequest {
 
     // return response.
     if (exception == null) {
-      LOG.info("created bucket: {} of layout {} in volume: {}", bucketName,
-          omBucketInfo.getBucketLayout(), volumeName);
+      LOG.info("created bucket: {} of layout {} in volume: {}, allowed dc: {}", bucketName,
+          omBucketInfo.getBucketLayout(), volumeName, omBucketInfo.getMetadata().get(OzoneConsts.DATACENTERS));
       omMetrics.incNumBuckets();
       if (isECBucket(bucketInfo)) {
         omMetrics.incEcBucketsTotal();

@@ -25,6 +25,7 @@ import java.io.IOException;
 import org.apache.hadoop.hdds.client.ECReplicationConfig;
 import org.apache.hadoop.hdds.client.ReplicationConfig;
 import org.apache.hadoop.hdds.conf.ConfigurationSource;
+import org.apache.hadoop.hdds.scm.ScmUtils;
 import org.apache.hadoop.hdds.scm.container.ContainerInfo;
 import org.apache.hadoop.hdds.scm.container.common.helpers.ExcludeList;
 import org.apache.hadoop.hdds.scm.pipeline.WritableECContainerProvider.WritableECContainerProviderConfig;
@@ -45,7 +46,11 @@ public class WritableContainerFactory {
 
     this.ratisProvider = new WritableRatisContainerProvider(
         scm.getPipelineManager(),
-        scm.getContainerManager(), scm.getPipelineChoosePolicy());
+        scm.getContainerManager(),
+        scm.getPipelineChoosePolicy(),
+        scm.getScmNodeManager(),
+        ScmUtils.getDcMapping(conf)
+        );
     this.standaloneProvider = ratisProvider;
 
     WritableECContainerProviderConfig ecProviderConfig =
@@ -62,17 +67,17 @@ public class WritableContainerFactory {
   }
 
   public ContainerInfo getContainer(final long size,
-      ReplicationConfig repConfig, String owner, ExcludeList excludeList)
+      ReplicationConfig repConfig, String owner, ExcludeList excludeList, String datacenters)
       throws IOException {
     switch (repConfig.getReplicationType()) {
     case STAND_ALONE:
       return standaloneProvider
-          .getContainer(size, repConfig, owner, excludeList);
+          .getContainer(size, repConfig, owner, excludeList, null);
     case RATIS:
-      return ratisProvider.getContainer(size, repConfig, owner, excludeList);
+      return ratisProvider.getContainer(size, repConfig, owner, excludeList, datacenters);
     case EC:
       return ecProvider.getContainer(size, (ECReplicationConfig)repConfig,
-          owner, excludeList);
+          owner, excludeList, null);
     default:
       throw new IOException(repConfig.getReplicationType()
           + " is an invalid replication type");

@@ -633,6 +633,12 @@ public final class ScmConfigKeys {
   public static final String NET_TOPOLOGY_NODE_SWITCH_MAPPING_IMPL_KEY =
       "net.topology.node.switch.mapping.impl";
 
+  public static final String OZONE_SCM_DC_DATANODE_MAPPING_KEY =
+      "ozone.scm.dc.datanode.mapping";
+
+  public static final String OZONE_SCM_DC_DATANODE_MAPPING_DEFAULT =
+      "";
+
   /**
    * Never constructed.
    */

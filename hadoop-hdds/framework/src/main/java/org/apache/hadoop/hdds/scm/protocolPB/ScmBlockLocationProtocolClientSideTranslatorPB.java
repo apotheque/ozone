@@ -156,7 +156,7 @@ public final class ScmBlockLocationProtocolClientSideTranslatorPB
       long size, int num,
       ReplicationConfig replicationConfig,
       String owner, ExcludeList excludeList,
-      String clientMachine
+      String clientMachine, String datacenters
   ) throws IOException {
     Preconditions.checkArgument(size > 0, "block size must be greater than 0");
 
@@ -166,7 +166,8 @@ public final class ScmBlockLocationProtocolClientSideTranslatorPB
             .setNumBlocks(num)
             .setType(replicationConfig.getReplicationType())
             .setOwner(owner)
-            .setExcludeList(excludeList.getProtoBuf());
+            .setExcludeList(excludeList.getProtoBuf())
+            .setDatacenters(datacenters);
 
     if (StringUtils.isNotEmpty(clientMachine)) {
       requestBuilder.setClient(clientMachine);

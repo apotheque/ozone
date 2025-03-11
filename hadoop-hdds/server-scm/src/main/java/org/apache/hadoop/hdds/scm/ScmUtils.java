@@ -34,6 +34,8 @@ import static org.apache.hadoop.hdds.scm.ScmConfigKeys.OZONE_SCM_DATANODE_BIND_H
 import static org.apache.hadoop.hdds.scm.ScmConfigKeys.OZONE_SCM_DATANODE_BIND_HOST_KEY;
 import static org.apache.hadoop.hdds.scm.ScmConfigKeys.OZONE_SCM_DATANODE_PORT_DEFAULT;
 import static org.apache.hadoop.hdds.scm.ScmConfigKeys.OZONE_SCM_DATANODE_PORT_KEY;
+import static org.apache.hadoop.hdds.scm.ScmConfigKeys.OZONE_SCM_DC_DATANODE_MAPPING_DEFAULT;
+import static org.apache.hadoop.hdds.scm.ScmConfigKeys.OZONE_SCM_DC_DATANODE_MAPPING_KEY;
 import static org.apache.hadoop.hdds.scm.ScmConfigKeys.OZONE_SCM_EVENT_CONTAINER_REPORT_QUEUE_SIZE_DEFAULT;
 import static org.apache.hadoop.hdds.scm.ScmConfigKeys.OZONE_SCM_EVENT_PREFIX;
 import static org.apache.hadoop.hdds.scm.ScmConfigKeys.OZONE_SCM_EVENT_THREAD_POOL_SIZE_DEFAULT;
@@ -41,10 +43,13 @@ import static org.apache.hadoop.hdds.scm.ScmConfigKeys.OZONE_SCM_EVENT_THREAD_PO
 import jakarta.annotation.Nonnull;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.concurrent.BlockingQueue;
+import java.util.stream.Collectors;
 import org.apache.hadoop.hdds.conf.ConfigurationSource;
 import org.apache.hadoop.hdds.conf.OzoneConfiguration;
 import org.apache.hadoop.hdds.scm.events.SCMEvents;
@@ -217,5 +222,12 @@ public final class ScmUtils {
             SCMException.ResultCodes.CA_ROTATION_IN_POST_PROGRESS);
       }
     }
+  }
+
+  public static Map<String, String> getDcMapping(ConfigurationSource conf) {
+    final String dcMappingStr = conf.get(OZONE_SCM_DC_DATANODE_MAPPING_KEY, OZONE_SCM_DC_DATANODE_MAPPING_DEFAULT);
+    return Arrays.stream(dcMappingStr.split(","))
+        .map(s -> s.split("=", 2))
+        .collect(Collectors.toMap(parts -> parts[0], parts -> parts[1]));
   }
 }

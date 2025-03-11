@@ -91,7 +91,7 @@ public class WritableECContainerProvider
    */
   @Override
   public ContainerInfo getContainer(final long size,
-      ECReplicationConfig repConfig, String owner, ExcludeList excludeList)
+      ECReplicationConfig repConfig, String owner, ExcludeList excludeList, String datacenters)
       throws IOException {
     int maximumPipelines = getMaximumPipelines(repConfig);
     int openPipelineCount;

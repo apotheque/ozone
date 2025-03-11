@@ -116,6 +116,7 @@ public class OMFileCreateRequest extends OMKeyRequest {
 
     final OmBucketInfo bucketInfo = ozoneManager
         .getBucketInfo(keyArgs.getVolumeName(), keyArgs.getBucketName());
+    final String datacenters = bucketInfo.getMetadata().get(OzoneConsts.DATACENTERS);
     final ReplicationConfig repConfig = OzoneConfigUtil
         .resolveReplicationConfigPreference(type, factor,
             keyArgs.getEcReplicationConfig(),
@@ -134,7 +135,9 @@ public class OMFileCreateRequest extends OMKeyRequest {
               ozoneManager.getOMServiceId(),
               ozoneManager.getMetrics(),
               keyArgs.getSortDatanodes(),
-              userInfo);
+              datacenters,
+              userInfo
+            );
 
     KeyArgs.Builder newKeyArgs = keyArgs.toBuilder()
         .setModificationTime(Time.now()).setType(type).setFactor(factor)

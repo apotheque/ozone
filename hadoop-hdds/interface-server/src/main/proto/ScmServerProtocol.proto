@@ -159,6 +159,7 @@ message AllocateScmBlockRequestProto {
   optional hadoop.hdds.ECReplicationConfig ecReplicationConfig = 8;
 
   optional string client = 9;
+  optional string datacenters = 10;
 
 }
 

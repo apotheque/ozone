@@ -57,6 +57,10 @@ public class CreateBucketHandler extends BucketHandler {
               " user if not specified")
   private String ownerName;
 
+  @Option(names = {"--datacenters", "-dc"},
+      description = "Comma-separated list of datacenters to store the bucket in")
+  private String datacenters;
+
   private static class LayoutConverter implements CommandLine.ITypeConverter<BucketLayout> {
     @Override
     public BucketLayout convert(String value) {
@@ -111,6 +115,10 @@ public class CreateBucketHandler extends BucketHandler {
 
     if (isGdprEnforced != null) {
       bb.addMetadata(OzoneConsts.GDPR_FLAG, String.valueOf(isGdprEnforced));
+    }
+
+    if (datacenters != null && !datacenters.isEmpty()) {
+      bb.addMetadata(OzoneConsts.DATACENTERS, datacenters);
     }
 
     if (bekName != null) {
