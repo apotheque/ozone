@@ -108,11 +108,9 @@ public class WritableRatisContainerProvider
       List<DatanodeDetails> excludedNodes = Collections.emptyList();
       if (datacenters != null && !datacenters.isEmpty()) {
         excludedNodes = getExcludedNodesByDc(scmNodeManager.getAllNodes(), datacenters);
-        LOG.info("Excluded nodes: {}", excludedNodes.stream().map(dn -> dn.getPort(DatanodeDetails.Port.Name.RATIS)));
       }
       // TODO: why is pipeline created without accounting for excludeList???
       Pipeline pipeline = pipelineManager.createPipeline(repConfig, excludedNodes, Collections.emptyList());
-      LOG.info("Created pipeline with nodes: {}", pipeline.getNodes());
 
       // wait until pipeline is ready
       pipelineManager.waitPipelineReady(pipeline.getId(), 0);

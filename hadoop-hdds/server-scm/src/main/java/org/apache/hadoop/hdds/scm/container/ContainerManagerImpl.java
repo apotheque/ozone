@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -387,7 +388,7 @@ public class ContainerManagerImpl implements ContainerManager {
       ContainerID cid = containerIDIterator.next();
       try {
         ContainerInfo containerInfo = getContainer(cid);
-        if (!containerInfo.getOwner().equals(owner) || !containerInfo.getDatacenters().equals(datacenters)) {
+        if (!containerInfo.getOwner().equals(owner) || !Objects.equals(containerInfo.getDatacenters(), datacenters)) {
           containerIDIterator.remove();
         }
       } catch (ContainerNotFoundException e) {
