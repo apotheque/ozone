@@ -250,8 +250,7 @@ public class ContainerManagerImpl implements ContainerManager {
         .setOwner(owner)
         .setContainerID(containerID.getId())
         .setDeleteTransactionId(0)
-        .setReplicationType(pipeline.getType())
-        .setDatacenters(datacenters);
+        .setReplicationType(pipeline.getType());
 
     if (pipeline.getReplicationConfig() instanceof ECReplicationConfig) {
       containerInfoBuilder.setEcReplicationConfig(
@@ -259,6 +258,10 @@ public class ContainerManagerImpl implements ContainerManager {
     } else {
       containerInfoBuilder.setReplicationFactor(
           ReplicationConfig.getLegacyFactor(pipeline.getReplicationConfig()));
+    }
+
+    if (StringUtils.isNotEmpty(datacenters)) {
+      containerInfoBuilder.setDatacenters(datacenters);
     }
 
     containerStateManager.addContainer(containerInfoBuilder.build());

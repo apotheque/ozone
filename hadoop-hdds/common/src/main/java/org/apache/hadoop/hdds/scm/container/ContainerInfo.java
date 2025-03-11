@@ -274,8 +274,7 @@ public final class ContainerInfo implements Comparable<ContainerInfo> {
         .setDeleteTransactionId(getDeleteTransactionId())
         .setOwner(getOwner())
         .setSequenceId(getSequenceId())
-        .setReplicationType(getReplicationType())
-        .setDatacenters(getDatacenters());
+        .setReplicationType(getReplicationType());
 
     if (replicationConfig instanceof ECReplicationConfig) {
       builder.setEcReplicationConfig(((ECReplicationConfig) replicationConfig)
@@ -289,6 +288,10 @@ public final class ContainerInfo implements Comparable<ContainerInfo> {
 
     if (getPipelineID() != null) {
       builder.setPipelineID(getPipelineID().getProtobuf());
+    }
+
+    if (StringUtils.isNotEmpty(datacenters)) {
+      builder.setDatacenters(datacenters);
     }
     return builder.build();
   }
