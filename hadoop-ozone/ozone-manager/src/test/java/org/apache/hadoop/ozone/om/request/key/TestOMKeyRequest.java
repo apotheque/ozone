@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyLong;
@@ -215,7 +216,7 @@ public class TestOMKeyRequest {
     when(scmBlockLocationProtocol.allocateBlock(anyLong(), anyInt(),
         any(ReplicationConfig.class),
         anyString(), any(ExcludeList.class),
-        anyString(), null)).thenAnswer(invocation -> {
+        anyString(), isNull())).thenAnswer(invocation -> {
           int num = invocation.getArgument(1);
           List<AllocatedBlock> allocatedBlocks = new ArrayList<>(num);
           for (int i = 0; i < num; i++) {

@@ -25,6 +25,7 @@ import static org.apache.hadoop.ozone.OzoneConfigKeys.OZONE_KEY_PREALLOCATION_BL
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyInt;
@@ -724,7 +725,7 @@ public class TestOmContainerLocationCache {
             anyString(),
             any(ExcludeList.class),
             anyString(),
-            null))
+            isNull()))
         .thenReturn(Collections.singletonList(block));
   }
 
@@ -741,7 +742,7 @@ public class TestOmContainerLocationCache {
             anyString(),
             any(ExcludeList.class),
             anyString(),
-            null))
+            isNull()))
         .thenReturn(Collections.singletonList(block));
   }
 
