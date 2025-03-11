@@ -31,6 +31,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.hadoop.hdds.client.RatisReplicationConfig;
@@ -150,6 +151,8 @@ class TestWritableRatisContainerProvider {
     Pipeline newPipeline = MockPipeline.createPipeline(3);
     when(pipelineManager.createPipeline(REPLICATION_CONFIG))
         .thenReturn(newPipeline);
+    when(pipelineManager.createPipeline(REPLICATION_CONFIG, emptyList(), emptyList()))
+        .thenReturn(newPipeline);
 
     when(pipelineManager.getPipelines(REPLICATION_CONFIG, OPEN, emptySet(), emptySet()))
         .thenReturn(emptyList())
@@ -159,20 +162,20 @@ class TestWritableRatisContainerProvider {
   }
 
   private void throwWhenCreatePipeline() throws IOException {
-    when(pipelineManager.createPipeline(REPLICATION_CONFIG))
+    when(pipelineManager.createPipeline(REPLICATION_CONFIG, emptyList(), emptyList()))
         .thenThrow(new SCMException(SCMException.ResultCodes.FAILED_TO_FIND_SUITABLE_NODE));
   }
 
   private WritableRatisContainerProvider createSubject() {
     return new WritableRatisContainerProvider(
-        pipelineManager, containerManager, policy, scmNodeManager, null);
+        pipelineManager, containerManager, policy, scmNodeManager, Collections.emptyMap());
   }
 
   private void verifyPipelineCreated() throws IOException {
     verify(pipelineManager, times(2))
         .getPipelines(REPLICATION_CONFIG, OPEN, emptySet(), emptySet());
     verify(pipelineManager)
-        .createPipeline(REPLICATION_CONFIG);
+        .createPipeline(REPLICATION_CONFIG, emptyList(), emptyList());
   }
 
   private void verifyPipelineNotCreated() throws IOException {
