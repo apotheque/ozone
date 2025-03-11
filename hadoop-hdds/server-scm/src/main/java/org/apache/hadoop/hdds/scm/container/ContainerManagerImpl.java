@@ -36,6 +36,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdds.client.ECReplicationConfig;
 import org.apache.hadoop.hdds.client.ReplicationConfig;
@@ -257,8 +258,7 @@ public class ContainerManagerImpl implements ContainerManager {
         .setOwner(owner)
         .setContainerID(containerID.getId())
         .setDeleteTransactionId(0)
-        .setReplicationType(pipeline.getType())
-        .setDatacenters(datacenters);
+        .setReplicationType(pipeline.getType());
 
     if (pipeline.getReplicationConfig() instanceof ECReplicationConfig) {
       containerInfoBuilder.setEcReplicationConfig(
@@ -266,6 +266,10 @@ public class ContainerManagerImpl implements ContainerManager {
     } else {
       containerInfoBuilder.setReplicationFactor(
           ReplicationConfig.getLegacyFactor(pipeline.getReplicationConfig()));
+    }
+
+    if (StringUtils.isNotEmpty(datacenters)) {
+      containerInfoBuilder.setDatacenters(datacenters);
     }
 
     containerStateManager.addContainer(containerInfoBuilder.build());

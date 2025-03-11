@@ -166,11 +166,14 @@ public final class ScmBlockLocationProtocolClientSideTranslatorPB
             .setNumBlocks(num)
             .setType(replicationConfig.getReplicationType())
             .setOwner(owner)
-            .setExcludeList(excludeList.getProtoBuf())
-            .setDatacenters(datacenters);
+            .setExcludeList(excludeList.getProtoBuf());
 
     if (StringUtils.isNotEmpty(clientMachine)) {
       requestBuilder.setClient(clientMachine);
+    }
+
+    if (StringUtils.isNotEmpty(datacenters)) {
+      requestBuilder.setDatacenters(datacenters);
     }
 
     switch (replicationConfig.getReplicationType()) {

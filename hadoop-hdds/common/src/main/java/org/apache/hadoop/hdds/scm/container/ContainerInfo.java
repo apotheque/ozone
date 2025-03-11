@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Comparator;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.hadoop.hdds.client.ECReplicationConfig;
@@ -262,8 +263,7 @@ public final class ContainerInfo implements Comparable<ContainerInfo> {
         .setDeleteTransactionId(getDeleteTransactionId())
         .setOwner(getOwner())
         .setSequenceId(getSequenceId())
-        .setReplicationType(getReplicationType())
-        .setDatacenters(getDatacenters());
+        .setReplicationType(getReplicationType());
 
     if (replicationConfig instanceof ECReplicationConfig) {
       builder.setEcReplicationConfig(((ECReplicationConfig) replicationConfig)
@@ -277,6 +277,10 @@ public final class ContainerInfo implements Comparable<ContainerInfo> {
 
     if (getPipelineID() != null) {
       builder.setPipelineID(getPipelineID().getProtobuf());
+    }
+
+    if (StringUtils.isNotEmpty(datacenters)) {
+      builder.setDatacenters(datacenters);
     }
     return builder.build();
   }
