@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.hadoop.hdds.client.ReplicationConfig;
@@ -32,7 +31,6 @@ import org.apache.hadoop.hdds.scm.container.ContainerInfo;
 import org.apache.hadoop.hdds.scm.container.ContainerManager;
 import org.apache.hadoop.hdds.scm.container.common.helpers.ExcludeList;
 import org.apache.hadoop.hdds.scm.exceptions.SCMException;
-import org.apache.hadoop.hdds.scm.node.NodeManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,20 +46,14 @@ public class WritableRatisContainerProvider
   private final PipelineManager pipelineManager;
   private final PipelineChoosePolicy pipelineChoosePolicy;
   private final ContainerManager containerManager;
-  private final Map<String, String> dcMapping;
-  private final NodeManager scmNodeManager;
 
   public WritableRatisContainerProvider(
       PipelineManager pipelineManager,
       ContainerManager containerManager,
-      PipelineChoosePolicy pipelineChoosePolicy,
-      NodeManager scmNodeManager,
-      Map<String, String> dcMapping) {
+      PipelineChoosePolicy pipelineChoosePolicy) {
     this.pipelineManager = pipelineManager;
     this.containerManager = containerManager;
     this.pipelineChoosePolicy = pipelineChoosePolicy;
-    this.dcMapping = dcMapping;
-    this.scmNodeManager = scmNodeManager;
   }
 
 

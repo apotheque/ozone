@@ -31,7 +31,6 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.hadoop.hdds.client.RatisReplicationConfig;
@@ -168,7 +167,7 @@ class TestWritableRatisContainerProvider {
 
   private WritableRatisContainerProvider createSubject() {
     return new WritableRatisContainerProvider(
-        pipelineManager, containerManager, policy, scmNodeManager, Collections.emptyMap());
+        pipelineManager, containerManager, policy);
   }
 
   private void verifyPipelineCreated() throws IOException {

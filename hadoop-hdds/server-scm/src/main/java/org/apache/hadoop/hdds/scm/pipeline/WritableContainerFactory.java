@@ -25,7 +25,6 @@ import java.io.IOException;
 import org.apache.hadoop.hdds.client.ECReplicationConfig;
 import org.apache.hadoop.hdds.client.ReplicationConfig;
 import org.apache.hadoop.hdds.conf.ConfigurationSource;
-import org.apache.hadoop.hdds.scm.ScmUtils;
 import org.apache.hadoop.hdds.scm.container.ContainerInfo;
 import org.apache.hadoop.hdds.scm.container.common.helpers.ExcludeList;
 import org.apache.hadoop.hdds.scm.pipeline.WritableECContainerProvider.WritableECContainerProviderConfig;
@@ -47,9 +46,7 @@ public class WritableContainerFactory {
     this.ratisProvider = new WritableRatisContainerProvider(
         scm.getPipelineManager(),
         scm.getContainerManager(),
-        scm.getPipelineChoosePolicy(),
-        scm.getScmNodeManager(),
-        ScmUtils.getDcMapping(conf)
+        scm.getPipelineChoosePolicy()
         );
     this.standaloneProvider = ratisProvider;
 

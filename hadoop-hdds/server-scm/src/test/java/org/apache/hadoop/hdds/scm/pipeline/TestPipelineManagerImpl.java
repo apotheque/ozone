@@ -869,7 +869,7 @@ public class TestPipelineManagerImpl {
     doThrow(SCMException.class).when(pipelineManagerSpy)
         .createPipeline(any(), any(), anyList(), anySet());
     provider = new WritableRatisContainerProvider(
-        pipelineManagerSpy, containerManager, pipelineChoosingPolicy, nodeManager, null);
+        pipelineManagerSpy, containerManager, pipelineChoosingPolicy);
 
     // Add a single pipeline to manager, (in the allocated state)
     allocatedPipeline = pipelineManager.createPipeline(repConfig);
