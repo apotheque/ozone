@@ -1059,7 +1059,7 @@ public class TestECUnderReplicationHandler {
         emptyList(), result, 1);
     assertEquals(1, commandsSent.size());
     verify(ecPlacementPolicy, times(0))
-        .chooseDatanodes(anyList(), isNull(), eq(0), anyLong(),
+        .chooseDatanodes(anyList(), isNull(), anySet(), eq(0), anyLong(),
             anyLong());
   }
 

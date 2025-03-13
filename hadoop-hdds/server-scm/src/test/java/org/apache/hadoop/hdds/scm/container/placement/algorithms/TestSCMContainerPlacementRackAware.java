@@ -18,6 +18,7 @@ package org.apache.hadoop.hdds.scm.container.placement.algorithms;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.IntStream;
@@ -208,19 +209,19 @@ public class TestSCMContainerPlacementRackAware {
     // 1 replica
     int nodeNum = 1;
     List<DatanodeDetails> datanodeDetails =
-        policy.chooseDatanodes(null, null, nodeNum, 0, 15);
+        policy.chooseDatanodes(null, null, Collections.emptySet(), nodeNum, 0, 15);
     Assertions.assertEquals(nodeNum, datanodeDetails.size());
 
     // 2 replicas
     nodeNum = 2;
-    datanodeDetails = policy.chooseDatanodes(null, null, nodeNum, 0, 15);
+    datanodeDetails = policy.chooseDatanodes(null, null, Collections.emptySet(), nodeNum, 0, 15);
     Assertions.assertEquals(nodeNum, datanodeDetails.size());
     Assertions.assertTrue(cluster.isSameParent(datanodeDetails.get(0),
         datanodeDetails.get(1)) || (datanodeCount % NODE_PER_RACK == 1));
 
     //  3 replicas
     nodeNum = 3;
-    datanodeDetails = policy.chooseDatanodes(null, null, nodeNum, 0, 15);
+    datanodeDetails = policy.chooseDatanodes(null, null, Collections.emptySet(), nodeNum, 0, 15);
     Assertions.assertEquals(nodeNum, datanodeDetails.size());
     // requires at least 2 racks for following statement
     assumeTrue(datanodeCount > NODE_PER_RACK &&
@@ -234,7 +235,7 @@ public class TestSCMContainerPlacementRackAware {
 
     //  4 replicas
     nodeNum = 4;
-    datanodeDetails = policy.chooseDatanodes(null, null, nodeNum, 0, 15);
+    datanodeDetails = policy.chooseDatanodes(null, null, Collections.emptySet(), nodeNum, 0, 15);
     Assertions.assertEquals(nodeNum, datanodeDetails.size());
     // requires at least 2 racks and enough datanodes for following statement
     assumeTrue(datanodeCount > NODE_PER_RACK + 1);
@@ -260,7 +261,7 @@ public class TestSCMContainerPlacementRackAware {
     excludedNodes.add(datanodes.get(0));
     excludedNodes.add(datanodes.get(1));
     List<DatanodeDetails> datanodeDetails = policy.chooseDatanodes(
-        excludedNodes, null, nodeNum, 0, 15);
+        excludedNodes, null, Collections.emptySet(), nodeNum, 0, 15);
     Assertions.assertEquals(nodeNum, datanodeDetails.size());
     Assertions.assertFalse(cluster.isSameParent(datanodeDetails.get(0),
         excludedNodes.get(0)));
@@ -272,7 +273,7 @@ public class TestSCMContainerPlacementRackAware {
     excludedNodes.clear();
     excludedNodes.add(datanodes.get(0));
     datanodeDetails = policy.chooseDatanodes(
-        excludedNodes, null, nodeNum, 0, 15);
+        excludedNodes, null, Collections.emptySet(), nodeNum, 0, 15);
     Assertions.assertEquals(nodeNum, datanodeDetails.size());
     Assertions.assertTrue(cluster.isSameParent(
         datanodeDetails.get(0), excludedNodes.get(0)) ||
@@ -284,7 +285,7 @@ public class TestSCMContainerPlacementRackAware {
     excludedNodes.add(datanodes.get(0));
     excludedNodes.add(datanodes.get(5));
     datanodeDetails = policy.chooseDatanodes(
-        excludedNodes, null, nodeNum, 0, 15);
+        excludedNodes, null, Collections.emptySet(), nodeNum, 0, 15);
     Assertions.assertEquals(nodeNum, datanodeDetails.size());
     Assertions.assertTrue(cluster.isSameParent(
         datanodeDetails.get(0), excludedNodes.get(0)) ||
@@ -301,7 +302,7 @@ public class TestSCMContainerPlacementRackAware {
     excludeNodes.add(datanodes.get(datanodeCount - 1));
     excludeNodes.add(datanodes.get(0));
     List<DatanodeDetails> chooseDatanodes =
-        policy.chooseDatanodes(excludeNodes, null, 1, 0, 0);
+        policy.chooseDatanodes(excludeNodes, null, Collections.emptySet(), 1, 0, 0);
     assertEquals(1, chooseDatanodes.size());
     // the selected node should be on the same rack as the second exclude node
     Assertions.assertTrue(
@@ -320,7 +321,7 @@ public class TestSCMContainerPlacementRackAware {
     setup(datanodeCount);
     int nodeNum = 5;
     List<DatanodeDetails> datanodeDetails =
-        policy.chooseDatanodes(null, null, nodeNum, 0, 15);
+        policy.chooseDatanodes(null, null, Collections.emptySet(), nodeNum, 0, 15);
     Assertions.assertEquals(nodeNum, datanodeDetails.size());
     Assertions.assertTrue(cluster.isSameParent(datanodeDetails.get(0),
         datanodeDetails.get(1)));
@@ -355,7 +356,7 @@ public class TestSCMContainerPlacementRackAware {
     // 5 replicas. there are only 3 racks. policy prohibit fallback should fail.
     int nodeNum = 5;
     try {
-      policyNoFallback.chooseDatanodes(null, null, nodeNum, 0, 15);
+      policyNoFallback.chooseDatanodes(null, null, Collections.emptySet(), nodeNum, 0, 15);
       fail("Fallback prohibited, this call should fail");
     } catch (Exception e) {
       assertEquals("SCMException", e.getClass().getSimpleName());
@@ -385,7 +386,7 @@ public class TestSCMContainerPlacementRackAware {
     // no excludedNodes, only favoredNodes
     favoredNodes.add(datanodes.get(0));
     List<DatanodeDetails> datanodeDetails = policy.chooseDatanodes(
-        excludedNodes, favoredNodes, nodeNum, 0, 15);
+        excludedNodes, favoredNodes, Collections.emptySet(), nodeNum, 0, 15);
     Assertions.assertEquals(nodeNum, datanodeDetails.size());
     Assertions.assertEquals(datanodeDetails.get(0).getNetworkFullPath(),
         favoredNodes.get(0).getNetworkFullPath());
@@ -397,7 +398,7 @@ public class TestSCMContainerPlacementRackAware {
     excludedNodes.add(datanodes.get(0));
     favoredNodes.add(datanodes.get(2));
     datanodeDetails = policy.chooseDatanodes(
-        excludedNodes, favoredNodes, nodeNum, 0, 15);
+        excludedNodes, favoredNodes, Collections.emptySet(), nodeNum, 0, 15);
     Assertions.assertEquals(nodeNum, datanodeDetails.size());
     Assertions.assertEquals(datanodeDetails.get(0).getNetworkFullPath(),
         favoredNodes.get(0).getNetworkFullPath());
@@ -409,7 +410,7 @@ public class TestSCMContainerPlacementRackAware {
     excludedNodes.add(datanodes.get(0));
     favoredNodes.add(datanodes.get(0));
     datanodeDetails = policy.chooseDatanodes(
-        excludedNodes, favoredNodes, nodeNum, 0, 15);
+        excludedNodes, favoredNodes, Collections.emptySet(), nodeNum, 0, 15);
     Assertions.assertEquals(nodeNum, datanodeDetails.size());
     Assertions.assertNotEquals(datanodeDetails.get(0).getNetworkFullPath(),
         favoredNodes.get(0).getNetworkFullPath());
@@ -423,7 +424,7 @@ public class TestSCMContainerPlacementRackAware {
 
     try {
       // request storage space larger than node capability
-      policy.chooseDatanodes(null, null, nodeNum, STORAGE_CAPACITY + 0, 15);
+      policy.chooseDatanodes(null, null, Collections.emptySet(), nodeNum, STORAGE_CAPACITY + 0, 15);
       fail("Storage requested exceeds capacity, this call should fail");
     } catch (Exception e) {
       assertTrue(e.getClass().getSimpleName().equals("SCMException"));
@@ -488,7 +489,7 @@ public class TestSCMContainerPlacementRackAware {
         new SCMContainerPlacementRackAware(nodeManager, conf, clusterMap, true,
             metrics);
     List<DatanodeDetails> datanodeDetails =
-        newPolicy.chooseDatanodes(null, null, nodeNum, 0, 15);
+        newPolicy.chooseDatanodes(null, null, Collections.emptySet(), nodeNum, 0, 15);
     Assertions.assertEquals(nodeNum, datanodeDetails.size());
     Assertions.assertTrue(cluster.isSameParent(datanodeDetails.get(0),
         datanodeDetails.get(1)));
@@ -625,7 +626,7 @@ public class TestSCMContainerPlacementRackAware {
       dnInfos.get(index).setNodeStatus(NodeStatus.inServiceHealthy());
       try {
         List<DatanodeDetails> datanodeDetails =
-            policy.chooseDatanodes(null, null, 1, 0, 0);
+            policy.chooseDatanodes(null, null, Collections.emptySet(), 1, 0, 0);
         Assertions.assertEquals(dnInfos.get(index), datanodeDetails.get(0));
       } catch (SCMException e) {
         // If we get SCMException: No satisfied datanode to meet the ... this is
@@ -861,7 +862,7 @@ public class TestSCMContainerPlacementRackAware {
     favouredNodes.add(datanodes.get(2));
 
     List<DatanodeDetails> datanodeDetails = policy.chooseDatanodes(usedNodes,
-        null, favouredNodes, nodeNum, 0, 5);
+        null, favouredNodes, Collections.emptySet(), nodeNum, 0, 5);
 
     Assertions.assertEquals(nodeNum, datanodeDetails.size());
     // Favoured node should not be returned,
@@ -874,7 +875,7 @@ public class TestSCMContainerPlacementRackAware {
     favouredNodes.add(datanodes.get(6));
 
     datanodeDetails = policy.chooseDatanodes(usedNodes,
-        null, favouredNodes, nodeNum, 0, 5);
+        null, favouredNodes, Collections.emptySet(), nodeNum, 0, 5);
 
     Assertions.assertEquals(nodeNum, datanodeDetails.size());
 

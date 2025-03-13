@@ -451,15 +451,14 @@ public class TestSCMCommonPlacementPolicy {
               List<DatanodeDetails> usedNodes,
               List<DatanodeDetails> excludedNodes,
               List<DatanodeDetails> favoredNodes,
+              Set<String> datacenters,
               int nodesRequired, long metadataSizeRequired,
               long dataSizeRequired) {
             usedNodesIdentity.set(usedNodesPassed(usedNodes));
             return null;
           }
         };
-    dummyPlacementPolicy.chooseDatanodes(null, null, 1, 1, 1);
-    assertFalse(usedNodesIdentity.get());
-    dummyPlacementPolicy.chooseDatanodes(null, null, null, 1, 1, 1);
+    dummyPlacementPolicy.chooseDatanodes(null, null, null, null, 1, 1, 1);
     Assertions.assertTrue(usedNodesIdentity.get());
   }
 

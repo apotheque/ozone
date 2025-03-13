@@ -89,7 +89,7 @@ public final class ContainerInfo implements Comparable<ContainerInfo> {
   // The sequenceId of a close container cannot change, and all the
   // container replica should have the same sequenceId.
   private long sequenceId;
-  private final String datacenters;
+  private final Set<String> datacenters;
 
   @SuppressWarnings("parameternumber")
   private ContainerInfo(
@@ -133,16 +133,14 @@ public final class ContainerInfo implements Comparable<ContainerInfo> {
         .setDeleteTransactionId(info.getDeleteTransactionId())
         .setReplicationConfig(config)
         .setSequenceId(info.getSequenceId())
+        .setDatacenters(new HashSet<>(info.getDatacentersList()))
         .build();
 
     if (info.hasPipelineID()) {
       builder.setPipelineID(PipelineID.getFromProtobuf(info.getPipelineID()));
     }
-    if (info.hasDatacenters()) {
-      builder.setDatacenters(info.getDatacenters());
-    }
-    return builder.build();
 
+    return builder.build();
   }
 
   /**
@@ -234,7 +232,7 @@ public final class ContainerInfo implements Comparable<ContainerInfo> {
     return sequenceId;
   }
 
-  public String getDatacenters() {
+  public Set<String> getDatacenters() {
     return datacenters;
   }
 
@@ -276,7 +274,8 @@ public final class ContainerInfo implements Comparable<ContainerInfo> {
         .setDeleteTransactionId(getDeleteTransactionId())
         .setOwner(getOwner())
         .setSequenceId(getSequenceId())
-        .setReplicationType(getReplicationType());
+        .setReplicationType(getReplicationType())
+        .addAllDatacenters(getDatacenters());
 
     if (replicationConfig instanceof ECReplicationConfig) {
       builder.setEcReplicationConfig(((ECReplicationConfig) replicationConfig)
@@ -292,9 +291,6 @@ public final class ContainerInfo implements Comparable<ContainerInfo> {
       builder.setPipelineID(getPipelineID().getProtobuf());
     }
 
-    if (StringUtils.isNotEmpty(datacenters)) {
-      builder.setDatacenters(datacenters);
-    }
     return builder.build();
   }
 
@@ -396,7 +392,7 @@ public final class ContainerInfo implements Comparable<ContainerInfo> {
     private long sequenceId;
     private PipelineID pipelineID;
     private ReplicationConfig replicationConfig;
-    private String datacenters;
+    private Set<String> datacenters;
 
     public Builder setPipelineID(PipelineID pipelineId) {
       this.pipelineID = pipelineId;
@@ -458,7 +454,7 @@ public final class ContainerInfo implements Comparable<ContainerInfo> {
       return this;
     }
 
-    public Builder setDatacenters(String datacenters) {
+    public Builder setDatacenters(Set<String> datacenters) {
       this.datacenters = datacenters;
       return this;
     }

@@ -307,7 +307,7 @@ public class TestRatisPipelineProvider {
 
     Pipeline pipeline1 = provider.create(
         RatisReplicationConfig.getInstance(ReplicationFactor.THREE),
-        excludedNodes, Collections.EMPTY_LIST);
+        excludedNodes, Collections.EMPTY_LIST, Collections.emptySet());
 
     for (DatanodeDetails dn : pipeline1.getNodes()) {
       assertFalse(excludedNodes.contains(dn));
@@ -329,7 +329,7 @@ public class TestRatisPipelineProvider {
     Assertions.assertThrows(SCMException.class, () ->
         provider.create(RatisReplicationConfig
                 .getInstance(ReplicationFactor.THREE),
-            excludedNodes, Collections.EMPTY_LIST));
+            excludedNodes, Collections.EMPTY_LIST, Collections.emptySet()));
   }
 
   @Test

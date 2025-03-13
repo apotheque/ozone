@@ -85,10 +85,10 @@ public final class ReplicationManagerUtil {
     while (mutableRequiredNodes > 0) {
       try {
         if (usedNodes == null) {
-          return policy.chooseDatanodes(excludedNodes, null,
+          return policy.chooseDatanodes(excludedNodes, null, Collections.emptySet(),
               mutableRequiredNodes, 0, dataSizeRequired);
         } else {
-          return policy.chooseDatanodes(usedNodes, excludedNodes, null,
+          return policy.chooseDatanodes(usedNodes, excludedNodes, null, Collections.emptySet(),
               mutableRequiredNodes, 0, dataSizeRequired);
         }
       } catch (IOException e) {

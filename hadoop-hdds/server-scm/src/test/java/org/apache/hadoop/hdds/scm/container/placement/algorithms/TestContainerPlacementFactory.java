@@ -152,7 +152,7 @@ public class TestContainerPlacementFactory {
 
     int nodeNum = 3;
     List<DatanodeDetails> datanodeDetails =
-        policy.chooseDatanodes(null, null, nodeNum, 15, 15);
+        policy.chooseDatanodes(null, null, Collections.emptySet(), nodeNum, 15, 15);
     Assertions.assertEquals(nodeNum, datanodeDetails.size());
     Assertions.assertTrue(cluster.isSameParent(datanodeDetails.get(0),
         datanodeDetails.get(1)));
@@ -190,6 +190,7 @@ public class TestContainerPlacementFactory {
         List<DatanodeDetails> usedNodes,
         List<DatanodeDetails> excludedNodes,
         List<DatanodeDetails> favoredNodes,
+        Set<String> datacenters,
         int nodesRequired, long metadataSizeRequired, long dataSizeRequired) {
       return null;
     }

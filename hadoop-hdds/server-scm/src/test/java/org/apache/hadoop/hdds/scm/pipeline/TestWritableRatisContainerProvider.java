@@ -141,7 +141,7 @@ class TestWritableRatisContainerProvider {
         .setPipelineID(pipeline.getId())
         .build();
 
-    when(containerManager.getMatchingContainer(CONTAINER_SIZE, OWNER, pipeline, emptySet(), null))
+    when(containerManager.getMatchingContainer(CONTAINER_SIZE, OWNER, pipeline, emptySet()))
         .thenReturn(container);
 
     return container;
@@ -151,7 +151,7 @@ class TestWritableRatisContainerProvider {
     Pipeline newPipeline = MockPipeline.createPipeline(3);
     when(pipelineManager.createPipeline(REPLICATION_CONFIG))
         .thenReturn(newPipeline);
-    when(pipelineManager.createPipeline(REPLICATION_CONFIG, emptyList(), emptyList()))
+    when(pipelineManager.createPipeline(REPLICATION_CONFIG, emptyList(), emptyList(), emptySet()))
         .thenReturn(newPipeline);
 
     when(pipelineManager.getPipelines(REPLICATION_CONFIG, OPEN, emptySet(), emptySet()))
@@ -162,7 +162,7 @@ class TestWritableRatisContainerProvider {
   }
 
   private void throwWhenCreatePipeline() throws IOException {
-    when(pipelineManager.createPipeline(REPLICATION_CONFIG, emptyList(), emptyList()))
+    when(pipelineManager.createPipeline(REPLICATION_CONFIG, emptyList(), emptyList(), emptySet()))
         .thenThrow(new SCMException(SCMException.ResultCodes.FAILED_TO_FIND_SUITABLE_NODE));
   }
 
@@ -175,7 +175,7 @@ class TestWritableRatisContainerProvider {
     verify(pipelineManager, times(2))
         .getPipelines(REPLICATION_CONFIG, OPEN, emptySet(), emptySet());
     verify(pipelineManager)
-        .createPipeline(REPLICATION_CONFIG, emptyList(), emptyList());
+        .createPipeline(REPLICATION_CONFIG, emptyList(), emptyList(), emptySet());
   }
 
   private void verifyPipelineNotCreated() throws IOException {

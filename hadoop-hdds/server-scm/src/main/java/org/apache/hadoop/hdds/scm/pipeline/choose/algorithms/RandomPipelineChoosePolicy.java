@@ -22,6 +22,7 @@ import org.apache.hadoop.hdds.scm.PipelineRequestInformation;
 import org.apache.hadoop.hdds.scm.pipeline.Pipeline;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Random choose policy that randomly chooses pipeline.
@@ -47,6 +48,16 @@ public class RandomPipelineChoosePolicy implements PipelineChoosePolicy {
   @Override
   public int choosePipelineIndex(List<Pipeline> pipelineList,
       PipelineRequestInformation pri) {
-    return (int) (Math.random() * pipelineList.size());
+    Set<String> datacenters = pri.getDatacenters();
+    if (datacenters.isEmpty()) {
+      return (int) (Math.random() * pipelineList.size());
+    }
+    // find first pipeline with matching set of nodes
+    for (int i = 0; i < pipelineList.size(); i++) {
+      if (pipelineList.get(i).getDatacenters().equals(datacenters)) {
+        return i;
+      }
+    }
+    return -1;
   }
 }

@@ -305,7 +305,7 @@ public class TestWritableECContainerProvider {
       @Override
       public Pipeline createPipeline(ReplicationConfig repConf,
           List<DatanodeDetails> excludedNodes,
-          List<DatanodeDetails> favoredNodes) throws IOException {
+          List<DatanodeDetails> favoredNodes, Set<String> datacenters) throws IOException {
         throw new IOException("Cannot create pipelines");
       }
     };
@@ -329,7 +329,7 @@ public class TestWritableECContainerProvider {
       @Override
       public Pipeline createPipeline(ReplicationConfig repConf,
           List<DatanodeDetails> excludedNodes,
-          List<DatanodeDetails> favoredNodes)
+          List<DatanodeDetails> favoredNodes, Set<String> datacenters)
           throws IOException {
         if (throwError) {
           throw new IOException("Cannot create pipelines");
@@ -519,7 +519,7 @@ public class TestWritableECContainerProvider {
     assertNotNull(container);
 
     verify(pipelineManagerSpy).createPipeline(repConfig,
-        Collections.emptyList(), Collections.emptyList());
+        Collections.emptyList(), Collections.emptyList(), Collections.emptySet());
 
     // If nodes are excluded then the excluded nodes should be passed through to
     // the create pipeline call.
@@ -531,7 +531,7 @@ public class TestWritableECContainerProvider {
         1, repConfig, OWNER, excludeList, null);
     assertNotNull(container);
     verify(pipelineManagerSpy).createPipeline(repConfig, excludedNodes,
-        Collections.emptyList());
+        Collections.emptyList(), Collections.emptySet());
   }
 
   private ContainerInfo createContainer(Pipeline pipeline,

@@ -204,7 +204,7 @@ public class WritableECContainerProvider
     }
 
     Pipeline newPipeline = pipelineManager.createPipeline(repConfig,
-        excludedNodes, Collections.emptyList());
+        excludedNodes, Collections.emptyList(), Collections.emptySet());
     ContainerInfo container =
         containerManager.getMatchingContainer(size, owner, newPipeline);
     pipelineManager.openPipeline(newPipeline.getId());
