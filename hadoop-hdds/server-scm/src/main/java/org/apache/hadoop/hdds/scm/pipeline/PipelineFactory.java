@@ -80,10 +80,10 @@ public class PipelineFactory {
 
   public Pipeline create(
       ReplicationConfig replicationConfig, List<DatanodeDetails> excludedNodes,
-      List<DatanodeDetails> favoredNodes)
+      List<DatanodeDetails> favoredNodes, Set<String> datacenters)
       throws IOException {
     Pipeline pipeline = providers.get(replicationConfig.getReplicationType())
-        .create(replicationConfig, excludedNodes, favoredNodes);
+        .create(replicationConfig, excludedNodes, favoredNodes, datacenters);
     checkPipeline(pipeline);
     return pipeline;
   }

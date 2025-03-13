@@ -27,6 +27,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.apache.hadoop.hdds.conf.OzoneConfiguration;
 import org.apache.hadoop.hdds.conf.StorageUnit;
@@ -100,7 +101,7 @@ public class TestSCMContainerPlacementRandom {
     for (int i = 0; i < 100; i++) {
       //when
       List<DatanodeDetails> datanodeDetails = scmContainerPlacementRandom
-          .chooseDatanodes(existingNodes, null, 1, 15, 15);
+          .chooseDatanodes(existingNodes, null, Collections.emptySet(), 1, 15, 15);
 
       //then
       assertEquals(1, datanodeDetails.size());

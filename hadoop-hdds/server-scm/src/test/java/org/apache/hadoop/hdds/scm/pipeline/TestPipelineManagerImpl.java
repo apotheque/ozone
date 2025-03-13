@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyList;
 import static org.mockito.Mockito.anyLong;
@@ -867,7 +867,7 @@ public class TestPipelineManagerImpl {
 
     // Throw on pipeline creates, so no new pipelines can be created
     doThrow(SCMException.class).when(pipelineManagerSpy)
-        .createPipeline(any(), any(), anyList());
+        .createPipeline(any(), any(), anyList(), anySet());
     provider = new WritableRatisContainerProvider(
         pipelineManagerSpy, containerManager, pipelineChoosingPolicy, nodeManager, null);
 
@@ -885,7 +885,7 @@ public class TestPipelineManagerImpl {
     pipelineManager.addContainerToPipeline(
         allocatedPipeline.getId(), container.containerID());
     doReturn(container).when(containerManager).getMatchingContainer(anyLong(),
-        anyString(), eq(allocatedPipeline), any(), isNull());
+        anyString(), eq(allocatedPipeline), any());
 
 
     assertTrue(pipelineManager.getPipelines(repConfig,  OPEN)

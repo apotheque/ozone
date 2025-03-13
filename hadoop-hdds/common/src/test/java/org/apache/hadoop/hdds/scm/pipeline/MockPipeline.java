@@ -20,6 +20,7 @@ package org.apache.hadoop.hdds.scm.pipeline;
 import com.google.common.base.Preconditions;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,6 +71,7 @@ public final class MockPipeline {
         .setReplicationConfig(
             StandaloneReplicationConfig.getInstance(ReplicationFactor.ONE))
         .setNodes(dns)
+        .setDatacenters(Collections.emptySet())
         .build();
   }
 

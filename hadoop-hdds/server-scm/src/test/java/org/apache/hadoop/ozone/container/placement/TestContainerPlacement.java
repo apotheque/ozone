@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
@@ -90,12 +91,12 @@ public class TestContainerPlacement {
       long containerSize = random.nextInt(10) * OzoneConsts.GB;
       long metadataSize = random.nextInt(10) * OzoneConsts.GB;
       List<DatanodeDetails> nodesCapacity =
-          capacityPlacer.chooseDatanodes(new ArrayList<>(), null, nodesRequired,
+          capacityPlacer.chooseDatanodes(new ArrayList<>(), null, Collections.emptySet(), nodesRequired,
               metadataSize, containerSize);
       assertEquals(nodesRequired, nodesCapacity.size());
 
       List<DatanodeDetails> nodesRandom =
-          randomPlacer.chooseDatanodes(nodesCapacity, null, nodesRequired,
+          randomPlacer.chooseDatanodes(nodesCapacity, null, Collections.emptySet(), nodesRequired,
               metadataSize, containerSize);
 
       // One fifth of all calls are delete

@@ -22,6 +22,8 @@ import com.google.common.base.Preconditions;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.hadoop.hdds.client.RatisReplicationConfig;
 import org.apache.hadoop.hdds.conf.ConfigurationSource;
@@ -30,6 +32,7 @@ import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
 import org.apache.hadoop.hdds.protocol.proto.HddsProtos.ReplicationFactor;
 import org.apache.hadoop.hdds.scm.SCMCommonPlacementPolicy;
 import org.apache.hadoop.hdds.scm.ScmConfigKeys;
+import org.apache.hadoop.hdds.scm.ScmUtils;
 import org.apache.hadoop.hdds.scm.exceptions.SCMException;
 import org.apache.hadoop.hdds.scm.net.NetworkTopology;
 import org.apache.hadoop.hdds.scm.node.NodeManager;
@@ -55,6 +58,7 @@ public final class PipelinePlacementPolicy extends SCMCommonPlacementPolicy {
   private final PipelineStateManager stateManager;
   private final int heavyNodeCriteria;
   private static final int REQUIRED_RACKS = 2;
+  private final Map<String, String> dcMapping;
 
   public static final String MULTIPLE_RACK_PIPELINE_MSG =
       "The cluster has multiple racks, but all nodes with available " +
@@ -77,6 +81,7 @@ public final class PipelinePlacementPolicy extends SCMCommonPlacementPolicy {
     this.stateManager = stateManager;
     String dnLimit = conf.get(ScmConfigKeys.OZONE_DATANODE_PIPELINE_LIMIT);
     this.heavyNodeCriteria = dnLimit == null ? 0 : Integer.parseInt(dnLimit);
+    this.dcMapping = ScmUtils.getDcMapping(conf);
   }
 
   public static int currentRatisThreePipelineCount(
@@ -244,13 +249,17 @@ public final class PipelinePlacementPolicy extends SCMCommonPlacementPolicy {
   @Override
   protected List<DatanodeDetails> chooseDatanodesInternal(
           List<DatanodeDetails> usedNodes, List<DatanodeDetails> excludedNodes,
-          List<DatanodeDetails> favoredNodes,
+          List<DatanodeDetails> favoredNodes, Set<String> datacenters,
           int nodesRequired, long metadataSizeRequired, long dataSizeRequired)
       throws SCMException {
     // Get a list of viable nodes based on criteria
     // and make sure excludedNodes are excluded from list.
     List<DatanodeDetails> healthyNodes = filterViableNodes(excludedNodes,
         usedNodes, nodesRequired, metadataSizeRequired, dataSizeRequired);
+
+    if (!datacenters.isEmpty()) {
+      return this.getResultSetWithDatacenters(nodesRequired, healthyNodes, usedNodes, datacenters);
+    }
 
     // Randomly picks nodes when all nodes are equal or factor is ONE.
     // This happens when network topology is absent or
@@ -277,6 +286,54 @@ public final class PipelinePlacementPolicy extends SCMCommonPlacementPolicy {
       node = chooseNode(inputNodes);
     }
     return node;
+  }
+
+  /**
+   * Get result set based on the pipeline placement algorithm which considers datacenters.
+   * @param nodesRequired - Nodes Required
+   * @param healthyNodes - List of Nodes in the result set.
+   * @param usedNodes - List of used Nodes.
+   * @param datacenters - Set of datacenter names.
+   * @return a list of datanodes
+   * @throws SCMException SCMException
+   */
+  private List<DatanodeDetails> getResultSetWithDatacenters(
+      int nodesRequired, List<DatanodeDetails> healthyNodes,
+      List<DatanodeDetails> usedNodes, Set<String> datacenters)
+      throws SCMException {
+    Preconditions.checkNotNull(usedNodes);
+    Preconditions.checkNotNull(healthyNodes);
+    Preconditions.checkState(nodesRequired >= 1);
+
+    if (nodesRequired % datacenters.size() != 0) {
+      String msg = String.format("Number of nodes required (%d) must be a multiple of requested datacenters (%d).",
+          nodesRequired, datacenters.size());
+      throw new SCMException(msg, SCMException.ResultCodes.INVALID_CAPACITY);
+    }
+
+    int nodesRequiredPerDc = nodesRequired / datacenters.size();
+    Map<String, List<DatanodeDetails>> nodesPerDatacenter = datacenters.stream()
+        .collect(Collectors.toMap(dc -> dc, dc -> new ArrayList<>()));
+    for (DatanodeDetails node : healthyNodes) {
+      String nodeDc = dcMapping.get(node.getHostName() + ":" +
+          node.getPort(DatanodeDetails.Port.Name.RATIS).getValue());
+      if (nodesPerDatacenter.containsKey(nodeDc) && nodesPerDatacenter.get(nodeDc).size() < nodesRequiredPerDc) {
+        nodesPerDatacenter.get(nodeDc).add(node);
+      }
+    }
+
+    List<DatanodeDetails> datanodesWithinDatacenters = new ArrayList<>();
+    for (List<DatanodeDetails> nodes : nodesPerDatacenter.values()) {
+      if (nodes.size() < nodesRequiredPerDc) {
+        String msg = String.format("Unable to find enough nodes in requested datacenter. " +
+            "Requested %d nodes, found %d nodes.", nodesRequiredPerDc, nodes.size());
+        LOG.warn(msg);
+        throw new SCMException(msg,
+            SCMException.ResultCodes.FAILED_TO_FIND_ENOUGH_NODES_WITHIN_DATACENTER);
+      }
+      datanodesWithinDatacenters.addAll(nodes);
+    }
+    return datanodesWithinDatacenters;
   }
 
   /**

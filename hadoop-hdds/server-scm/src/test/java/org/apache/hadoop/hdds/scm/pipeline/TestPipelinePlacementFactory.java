@@ -34,6 +34,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.apache.hadoop.hdds.HddsConfigKeys;
 import org.apache.hadoop.hdds.conf.OzoneConfiguration;
@@ -174,7 +175,7 @@ public class TestPipelinePlacementFactory {
 
     int nodeNum = 3;
     List<DatanodeDetails> datanodeDetails =
-        policy.chooseDatanodes(null, null, nodeNum, 15, 15);
+        policy.chooseDatanodes(null, null, Collections.emptySet(), nodeNum, 15, 15);
     assertEquals(nodeNum, datanodeDetails.size());
     assertTrue(cluster.isSameParent(datanodeDetails.get(0),
         datanodeDetails.get(2)));
@@ -199,7 +200,7 @@ public class TestPipelinePlacementFactory {
     List<DatanodeDetails> excludedNodes = new ArrayList<>();
     List<DatanodeDetails> favoredNodes = new ArrayList<>();
     List<DatanodeDetails> datanodeDetails =
-        policy.chooseDatanodes(excludedNodes, excludedNodes, favoredNodes,
+        policy.chooseDatanodes(excludedNodes, excludedNodes, favoredNodes, Collections.emptySet(),
             nodeNum, 15, 15);
     assertEquals(nodeNum, datanodeDetails.size());
     assertFalse(cluster.isSameParent(datanodeDetails.get(0),
@@ -224,7 +225,7 @@ public class TestPipelinePlacementFactory {
 
     int nodeNum = 3;
     List<DatanodeDetails> datanodeDetails =
-        policy.chooseDatanodes(null, null, nodeNum, 15, 15);
+        policy.chooseDatanodes(null, null, Collections.emptySet(), nodeNum, 15, 15);
     assertEquals(nodeNum, datanodeDetails.size());
 
     // First anchor will be Node0, Since there is no more node available

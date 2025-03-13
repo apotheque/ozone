@@ -212,7 +212,7 @@ public class PipelineManagerImpl implements PipelineManager {
     }
     checkIfPipelineCreationIsAllowed(replicationConfig);
     return pipelineFactory.create(replicationConfig, excludedNodes,
-        favoredNodes);
+        favoredNodes, Collections.emptySet());
   }
 
   /**
@@ -237,12 +237,12 @@ public class PipelineManagerImpl implements PipelineManager {
   public Pipeline createPipeline(ReplicationConfig replicationConfig)
       throws IOException {
     return createPipeline(replicationConfig, Collections.emptyList(),
-        Collections.emptyList());
+        Collections.emptyList(), Collections.emptySet());
   }
 
   @Override
   public Pipeline createPipeline(ReplicationConfig replicationConfig,
-      List<DatanodeDetails> excludedNodes, List<DatanodeDetails> favoredNodes)
+      List<DatanodeDetails> excludedNodes, List<DatanodeDetails> favoredNodes, Set<String> datacenters)
       throws IOException {
     checkIfPipelineCreationIsAllowed(replicationConfig);
 
@@ -251,7 +251,7 @@ public class PipelineManagerImpl implements PipelineManager {
     try {
       try {
         pipeline = pipelineFactory.create(replicationConfig,
-            excludedNodes, favoredNodes);
+            excludedNodes, favoredNodes, datacenters);
       } catch (IOException e) {
         metrics.incNumPipelineCreationFailed();
         throw e;

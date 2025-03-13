@@ -26,6 +26,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -90,6 +91,8 @@ public final class Pipeline {
 
   private final Instant stateEnterTime;
 
+  private final Set<String> datacenters;
+
   /**
    * The immutable properties of pipeline object is used in
    * ContainerStateManager#getMatchingContainerByPipeline to take a lock on
@@ -115,6 +118,7 @@ public final class Pipeline {
     replicaIndexes = b.replicaIndexes;
     creationTimestamp = b.creationTimestamp != null ? b.creationTimestamp : Instant.now();
     stateEnterTime = Instant.now();
+    datacenters = b.datacenters;
   }
 
   /**
@@ -155,6 +159,10 @@ public final class Pipeline {
 
   public Instant getStateEnterTime() {
     return stateEnterTime;
+  }
+
+  public Set<String> getDatacenters() {
+    return datacenters;
   }
 
   /**
@@ -384,7 +392,8 @@ public final class Pipeline {
         .setLeaderID(leaderId != null ? leaderId.toString() : "")
         .setCreationTimeStamp(creationTimestamp.toEpochMilli())
         .addAllMembers(members)
-        .addAllMemberReplicaIndexes(memberReplicaIndexes);
+        .addAllMemberReplicaIndexes(memberReplicaIndexes)
+        .addAllDatacenters(datacenters);
 
     if (replicationConfig instanceof ECReplicationConfig) {
       builder.setEcReplicationConfig(((ECReplicationConfig) replicationConfig)
@@ -484,7 +493,8 @@ public final class Pipeline {
         .setLeaderId(leaderId)
         .setSuggestedLeaderId(suggestedLeaderId)
         .setNodeOrder(pipeline.getMemberOrdersList())
-        .setCreateTimestamp(pipeline.getCreationTimeStamp());
+        .setCreateTimestamp(pipeline.getCreationTimeStamp())
+        .setDatacenters(new HashSet<>(pipeline.getDatacentersList()));
   }
 
   public static Pipeline getFromProtobuf(HddsProtos.Pipeline pipeline)
@@ -560,6 +570,7 @@ public final class Pipeline {
     private Instant creationTimestamp = null;
     private UUID suggestedLeaderId = null;
     private Map<DatanodeDetails, Integer> replicaIndexes = ImmutableMap.of();
+    private Set<String> datacenters = new HashSet<>();
 
     public Builder() { }
 
@@ -572,6 +583,7 @@ public final class Pipeline {
       this.leaderId = pipeline.getLeaderId();
       this.creationTimestamp = pipeline.getCreationTimestamp();
       this.suggestedLeaderId = pipeline.getSuggestedLeaderId();
+      this.datacenters = pipeline.getDatacenters();
       if (nodeStatus != null) {
         final ImmutableMap.Builder<DatanodeDetails, Integer> b = ImmutableMap.builder();
         for (DatanodeDetails dn : nodeStatus.keySet()) {
@@ -641,6 +653,10 @@ public final class Pipeline {
       return this;
     }
 
+    public Builder setDatacenters(Set<String> datacenters) {
+      this.datacenters = datacenters;
+      return this;
+    }
 
     public Builder setReplicaIndexes(Map<DatanodeDetails, Integer> indexes) {
       this.replicaIndexes = indexes == null ? ImmutableMap.of() : ImmutableMap.copyOf(indexes);

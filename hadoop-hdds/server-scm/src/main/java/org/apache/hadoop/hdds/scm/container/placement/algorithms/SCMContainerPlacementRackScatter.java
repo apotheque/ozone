@@ -208,6 +208,7 @@ public final class SCMContainerPlacementRackScatter
           List<DatanodeDetails> usedNodes,
           final List<DatanodeDetails> excludedNodes,
           final List<DatanodeDetails> favoredNodes,
+          final Set<String> datacenters,
           final int nodesRequired, final long metadataSizeRequired,
           final long dataSizeRequired) throws SCMException {
     if (nodesRequired <= 0) {

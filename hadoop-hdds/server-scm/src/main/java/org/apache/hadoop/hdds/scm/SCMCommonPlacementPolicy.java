@@ -132,11 +132,13 @@ public abstract class SCMCommonPlacementPolicy implements
   @Override
   public final List<DatanodeDetails> chooseDatanodes(
           List<DatanodeDetails> excludedNodes,
-          List<DatanodeDetails> favoredNodes, int nodesRequired,
+          List<DatanodeDetails> favoredNodes,
+          Set<String> datacenters,
+          int nodesRequired,
           long metadataSizeRequired,
           long dataSizeRequired) throws SCMException {
     return this.chooseDatanodes(UNSET_USED_NODES, excludedNodes,
-          favoredNodes, nodesRequired, metadataSizeRequired,
+          favoredNodes, datacenters, nodesRequired, metadataSizeRequired,
           dataSizeRequired);
   }
 
@@ -189,6 +191,7 @@ public abstract class SCMCommonPlacementPolicy implements
           List<DatanodeDetails> usedNodes,
           List<DatanodeDetails> excludedNodes,
           List<DatanodeDetails> favoredNodes,
+          Set<String> datacenters,
           int nodesRequired, long metadataSizeRequired, long dataSizeRequired)
           throws SCMException {
 /*
@@ -205,7 +208,7 @@ public abstract class SCMCommonPlacementPolicy implements
   random node from NetworkTopology should fix this. Check HDDS-7015
  */
     return chooseDatanodesInternal(validateDatanodes(usedNodes),
-            validateDatanodes(excludedNodes), favoredNodes, nodesRequired,
+            validateDatanodes(excludedNodes), favoredNodes, datacenters, nodesRequired,
             metadataSizeRequired, dataSizeRequired);
   }
 
@@ -223,7 +226,7 @@ public abstract class SCMCommonPlacementPolicy implements
    */
   protected List<DatanodeDetails> chooseDatanodesInternal(
       List<DatanodeDetails> usedNodes, List<DatanodeDetails> excludedNodes,
-      List<DatanodeDetails> favoredNodes,
+      List<DatanodeDetails> favoredNodes, Set<String> datacenters,
       int nodesRequired, long metadataSizeRequired, long dataSizeRequired)
       throws SCMException {
     List<DatanodeDetails> healthyNodes =

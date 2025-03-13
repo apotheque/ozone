@@ -38,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyInt;
@@ -1060,7 +1061,7 @@ public class TestECUnderReplicationHandler {
         emptyList(), result, 1);
     assertEquals(1, commandsSent.size());
     verify(ecPlacementPolicy, times(0))
-        .chooseDatanodes(anyList(), isNull(), eq(0), anyLong(),
+        .chooseDatanodes(anyList(), isNull(), anySet(), eq(0), anyLong(),
             anyLong());
   }
 

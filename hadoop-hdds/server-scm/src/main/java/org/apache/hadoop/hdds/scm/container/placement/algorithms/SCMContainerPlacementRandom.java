@@ -19,6 +19,7 @@ package org.apache.hadoop.hdds.scm.container.placement.algorithms;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.util.List;
+import java.util.Set;
 import org.apache.hadoop.hdds.conf.ConfigurationSource;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
 import org.apache.hadoop.hdds.scm.PlacementPolicy;
@@ -76,12 +77,13 @@ public final class SCMContainerPlacementRandom extends SCMCommonPlacementPolicy
   protected List<DatanodeDetails> chooseDatanodesInternal(
           List<DatanodeDetails> usedNodes,
           List<DatanodeDetails> excludedNodes,
-          List<DatanodeDetails> favoredNodes, final int nodesRequired,
-          long metadataSizeRequired, long dataSizeRequired)
+          List<DatanodeDetails> favoredNodes,
+          Set<String> datacenters,
+          final int nodesRequired, long metadataSizeRequired, long dataSizeRequired)
           throws SCMException {
     metrics.incrDatanodeRequestCount(nodesRequired);
     List<DatanodeDetails> healthyNodes =
-        super.chooseDatanodesInternal(usedNodes, excludedNodes, favoredNodes,
+        super.chooseDatanodesInternal(usedNodes, excludedNodes, favoredNodes, datacenters,
                 nodesRequired, metadataSizeRequired, dataSizeRequired);
 
     if (healthyNodes.size() == nodesRequired) {

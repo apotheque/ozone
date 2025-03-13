@@ -183,7 +183,7 @@ public interface ContainerManager extends Closeable {
 
   default ContainerInfo getMatchingContainer(long size, String owner,
                                      Pipeline pipeline) {
-    return getMatchingContainer(size, owner, pipeline, Collections.emptySet(), null);
+    return getMatchingContainer(size, owner, pipeline, Collections.emptySet());
   }
 
   /**
@@ -196,7 +196,7 @@ public interface ContainerManager extends Closeable {
    */
   ContainerInfo getMatchingContainer(long size, String owner,
                                      Pipeline pipeline,
-                                     Set<ContainerID> excludedContainerIDS, String datacenters);
+                                     Set<ContainerID> excludedContainerIDS);
 
   /**
    * Once after report processor handler completes, call this to notify

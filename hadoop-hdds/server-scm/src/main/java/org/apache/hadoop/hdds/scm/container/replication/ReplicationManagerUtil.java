@@ -21,6 +21,7 @@ import static org.apache.hadoop.hdds.scm.container.replication.ReplicationManage
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -84,10 +85,10 @@ public final class ReplicationManagerUtil {
     while (mutableRequiredNodes > 0) {
       try {
         if (usedNodes == null) {
-          return policy.chooseDatanodes(excludedNodes, null,
+          return policy.chooseDatanodes(excludedNodes, null, Collections.emptySet(),
               mutableRequiredNodes, 0, dataSizeRequired);
         } else {
-          return policy.chooseDatanodes(usedNodes, excludedNodes, null,
+          return policy.chooseDatanodes(usedNodes, excludedNodes, null, Collections.emptySet(),
               mutableRequiredNodes, 0, dataSizeRequired);
         }
       } catch (IOException e) {

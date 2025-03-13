@@ -33,10 +33,11 @@ public interface PlacementPolicy {
 
   default List<DatanodeDetails> chooseDatanodes(
           List<DatanodeDetails> excludedNodes,
-          List<DatanodeDetails> favoredNodes, int nodesRequired,
+          List<DatanodeDetails> favoredNodes,
+          Set<String> datacenters, int nodesRequired,
           long metadataSizeRequired, long dataSizeRequired) throws IOException {
     return this.chooseDatanodes(Collections.emptyList(), excludedNodes,
-            favoredNodes, nodesRequired, metadataSizeRequired,
+            favoredNodes, datacenters, nodesRequired, metadataSizeRequired,
             dataSizeRequired);
   }
   /**
@@ -55,8 +56,8 @@ public interface PlacementPolicy {
   List<DatanodeDetails> chooseDatanodes(List<DatanodeDetails> usedNodes,
           List<DatanodeDetails> excludedNodes,
           List<DatanodeDetails> favoredNodes,
-          int nodesRequired, long metadataSizeRequired,
-          long dataSizeRequired) throws IOException;
+          Set<String> datacenters, int nodesRequired,
+          long metadataSizeRequired, long dataSizeRequired) throws IOException;
 
   /**
    * Given a list of datanode and the number of replicas required, return

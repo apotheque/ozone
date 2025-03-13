@@ -53,7 +53,8 @@ public class ReconPipelineFactory extends PipelineFactory {
     @Override
     public Pipeline create(ReplicationConfig config,
         List<DatanodeDetails> excludedNodes,
-        List<DatanodeDetails> favoredNodes) {
+        List<DatanodeDetails> favoredNodes,
+                           Set<String> datacenters) {
       // We don't expect this to be called at all. But adding this as a red
       // flag for troubleshooting.
       throw new UnsupportedOperationException(

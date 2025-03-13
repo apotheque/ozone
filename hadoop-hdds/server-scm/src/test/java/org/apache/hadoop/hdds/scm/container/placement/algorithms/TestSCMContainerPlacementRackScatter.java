@@ -276,12 +276,12 @@ public class TestSCMContainerPlacementRackScatter {
     // 1 replica
     int nodeNum = 1;
     List<DatanodeDetails> datanodeDetails =
-        policy.chooseDatanodes(null, null, nodeNum, 0, 15);
+        policy.chooseDatanodes(null, null, Collections.emptySet(), nodeNum, 0, 15);
     assertEquals(nodeNum, datanodeDetails.size());
 
     // 2 replicas
     nodeNum = 2;
-    datanodeDetails = policy.chooseDatanodes(null, null, nodeNum, 0, 15);
+    datanodeDetails = policy.chooseDatanodes(null, null, Collections.emptySet(), nodeNum, 0, 15);
     assertEquals(nodeNum, datanodeDetails.size());
     assertTrue(!cluster.isSameParent(datanodeDetails.get(0),
         datanodeDetails.get(1)) || (datanodeCount <= NODE_PER_RACK));
@@ -289,7 +289,7 @@ public class TestSCMContainerPlacementRackScatter {
     //  3 replicas
     nodeNum = 3;
     if (datanodeCount > nodeNum) {
-      datanodeDetails = policy.chooseDatanodes(null, null, nodeNum, 0, 15);
+      datanodeDetails = policy.chooseDatanodes(null, null, Collections.emptySet(), nodeNum, 0, 15);
       assertEquals(nodeNum, datanodeDetails.size());
       assertEquals(getRackSize(datanodeDetails),
           Math.min(nodeNum, rackNum));
@@ -302,10 +302,10 @@ public class TestSCMContainerPlacementRackScatter {
       if (datanodeCount == 6) {
         int finalNodeNum = nodeNum;
         SCMException e = assertThrows(SCMException.class,
-                () -> policy.chooseDatanodes(null, null, finalNodeNum, 0, 15));
+                () -> policy.chooseDatanodes(null, null, Collections.emptySet(), finalNodeNum, 0, 15));
         assertEquals(FAILED_TO_FIND_HEALTHY_NODES, e.getResult());
       } else {
-        datanodeDetails = policy.chooseDatanodes(null, null, nodeNum, 0, 15);
+        datanodeDetails = policy.chooseDatanodes(null, null, Collections.emptySet(), nodeNum, 0, 15);
         assertEquals(nodeNum, datanodeDetails.size());
         assertEquals(getRackSize(datanodeDetails), Math.min(nodeNum, rackNum));
       }
@@ -318,10 +318,10 @@ public class TestSCMContainerPlacementRackScatter {
       if (datanodeCount == 11) {
         int finalNodeNum = nodeNum;
         SCMException e = assertThrows(SCMException.class,
-                () -> policy.chooseDatanodes(null, null, finalNodeNum, 0, 15));
+                () -> policy.chooseDatanodes(null, null, Collections.emptySet(), finalNodeNum, 0, 15));
         assertEquals(FAILED_TO_FIND_HEALTHY_NODES, e.getResult());
       } else {
-        datanodeDetails = policy.chooseDatanodes(null, null, nodeNum, 0, 15);
+        datanodeDetails = policy.chooseDatanodes(null, null, Collections.emptySet(), nodeNum, 0, 15);
         assertEquals(nodeNum, datanodeDetails.size());
         assertEquals(getRackSize(datanodeDetails), Math.min(nodeNum, rackNum));
       }
@@ -345,7 +345,7 @@ public class TestSCMContainerPlacementRackScatter {
     excludedNodes.add(datanodes.get(0));
     excludedNodes.add(datanodes.get(1));
     List<DatanodeDetails> datanodeDetails = policy.chooseDatanodes(
-        excludedNodes, null, nodeNum, 0, 15);
+        excludedNodes, null, Collections.emptySet(), nodeNum, 0, 15);
     assertEquals(nodeNum, datanodeDetails.size());
     assertFalse(cluster.isSameParent(datanodeDetails.get(0),
         excludedNodes.get(0)));
@@ -358,7 +358,7 @@ public class TestSCMContainerPlacementRackScatter {
     excludedNodes.clear();
     excludedNodes.add(datanodes.get(0));
     datanodeDetails = policy.chooseDatanodes(
-        excludedNodes, null, nodeNum, 0, 15);
+        excludedNodes, null, Collections.emptySet(), nodeNum, 0, 15);
     assertEquals(nodeNum, datanodeDetails.size());
     assertEquals(getRackSize(datanodeDetails, excludedNodes),
         Math.min(totalNum, rackNum));
@@ -370,7 +370,7 @@ public class TestSCMContainerPlacementRackScatter {
     excludedNodes.add(datanodes.get(0));
     excludedNodes.add(datanodes.get(5));
     datanodeDetails = policy.chooseDatanodes(
-        excludedNodes, null, nodeNum, 0, 15);
+        excludedNodes, null, Collections.emptySet(), nodeNum, 0, 15);
     assertEquals(nodeNum, datanodeDetails.size());
     assertEquals(getRackSize(datanodeDetails, excludedNodes),
         Math.min(totalNum, rackNum));
@@ -383,12 +383,12 @@ public class TestSCMContainerPlacementRackScatter {
     if (datanodeCount == 6) {
       int finalNodeNum = nodeNum;
       SCMException e = assertThrows(SCMException.class,
-              () -> policy.chooseDatanodes(excludedNodes, null,
-                      finalNodeNum, 0, 15));
+              () -> policy.chooseDatanodes(excludedNodes, null, Collections.emptySet(),
+                  finalNodeNum, 0, 15));
       assertEquals(FAILED_TO_FIND_HEALTHY_NODES, e.getResult());
     } else {
       datanodeDetails = policy.chooseDatanodes(
-              excludedNodes, null, nodeNum, 0, 15);
+              excludedNodes, null, Collections.emptySet(), nodeNum, 0, 15);
       assertEquals(nodeNum, datanodeDetails.size());
       assertEquals(getRackSize(datanodeDetails, excludedNodes),
               Math.min(totalNum, rackNum));
@@ -402,7 +402,7 @@ public class TestSCMContainerPlacementRackScatter {
     excludedNodes.add(datanodes.get(0));
     excludedNodes.add(datanodes.get(5));
     datanodeDetails = policy.chooseDatanodes(
-        excludedNodes, null, nodeNum, 0, 15);
+        excludedNodes, null, Collections.emptySet(), nodeNum, 0, 15);
     assertEquals(nodeNum, datanodeDetails.size());
     assertEquals(getRackSize(datanodeDetails, excludedNodes),
         Math.min(totalNum, rackNum));
@@ -420,7 +420,7 @@ public class TestSCMContainerPlacementRackScatter {
     // no excludedNodes, only favoredNodes
     favoredNodes.add(datanodes.get(0));
     List<DatanodeDetails> datanodeDetails = policy.chooseDatanodes(
-        excludedNodes, favoredNodes, nodeNum, 0, 15);
+        excludedNodes, favoredNodes, Collections.emptySet(), nodeNum, 0, 15);
     assertEquals(nodeNum, datanodeDetails.size());
     assertEquals(datanodeDetails.get(0).getNetworkFullPath(),
         favoredNodes.get(0).getNetworkFullPath());
@@ -432,7 +432,7 @@ public class TestSCMContainerPlacementRackScatter {
     excludedNodes.add(datanodes.get(0));
     favoredNodes.add(datanodes.get(1));
     datanodeDetails = policy.chooseDatanodes(
-        excludedNodes, favoredNodes, nodeNum, 0, 15);
+        excludedNodes, favoredNodes, Collections.emptySet(), nodeNum, 0, 15);
     assertEquals(nodeNum, datanodeDetails.size());
     assertEquals(datanodeDetails.get(0).getNetworkFullPath(),
         favoredNodes.get(0).getNetworkFullPath());
@@ -444,7 +444,7 @@ public class TestSCMContainerPlacementRackScatter {
     excludedNodes.add(datanodes.get(0));
     favoredNodes.add(datanodes.get(0));
     datanodeDetails = policy.chooseDatanodes(
-        excludedNodes, favoredNodes, nodeNum, 0, 15);
+        excludedNodes, favoredNodes, Collections.emptySet(), nodeNum, 0, 15);
     assertEquals(nodeNum, datanodeDetails.size());
     assertNotEquals(datanodeDetails.get(0).getNetworkFullPath(),
         favoredNodes.get(0).getNetworkFullPath());
@@ -458,7 +458,7 @@ public class TestSCMContainerPlacementRackScatter {
     // request storage space larger than node capability
     Exception e =
         assertThrows(Exception.class,
-            () -> policy.chooseDatanodes(null, null, nodeNum, STORAGE_CAPACITY + 0, 15),
+            () -> policy.chooseDatanodes(null, null, Collections.emptySet(), nodeNum, STORAGE_CAPACITY + 0, 15),
             "Storage requested exceeds capacity, this call should fail");
     assertEquals("SCMException", e.getClass().getSimpleName());
 
@@ -521,7 +521,7 @@ public class TestSCMContainerPlacementRackScatter {
         new SCMContainerPlacementRackScatter(nodeManager, conf, clusterMap,
             true, metrics);
     List<DatanodeDetails> datanodeDetails =
-        newPolicy.chooseDatanodes(null, null, nodeNum, 0, 15);
+        newPolicy.chooseDatanodes(null, null, Collections.emptySet(), nodeNum, 0, 15);
     assertEquals(nodeNum, datanodeDetails.size());
     assertEquals(1, getRackSize(datanodeDetails));
   }
@@ -840,7 +840,7 @@ public class TestSCMContainerPlacementRackScatter {
     excludedNodes.add(datanodes.get(5));
 
     List<DatanodeDetails> datanodeDetails = policy.chooseDatanodes(
-        excludedNodes, null, nodeNum, 0, 5);
+        excludedNodes, null, Collections.emptySet(), nodeNum, 0, 5);
     assertEquals(nodeNum, datanodeDetails.size());
   }
 

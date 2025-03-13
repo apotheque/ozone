@@ -26,6 +26,7 @@ import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.ReplicationType.E
 import static org.apache.hadoop.hdds.scm.pipeline.Pipeline.PipelineState.ALLOCATED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyList;
@@ -37,6 +38,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -81,7 +83,7 @@ public class TestECPipelineProvider {
         StorageUnit.BYTES);
     // Placement policy will always return EC number of random nodes.
     when(placementPolicy.chooseDatanodes(anyList(),
-        anyList(), anyInt(), anyLong(),
+        anyList(), anySet(), anyInt(), anyLong(),
         anyLong()))
         .thenAnswer(invocation -> {
           List<DatanodeDetails> dns = new ArrayList<>();
@@ -196,11 +198,11 @@ public class TestECPipelineProvider {
     List<DatanodeDetails> favoredNodes = new ArrayList<>();
     favoredNodes.add(MockDatanodeDetails.randomDatanodeDetails());
 
-    Pipeline pipeline = provider.create(ecConf, excludedNodes, favoredNodes);
+    Pipeline pipeline = provider.create(ecConf, excludedNodes, favoredNodes, Collections.emptySet());
     assertEquals(EC, pipeline.getType());
     assertEquals(ecConf.getData() + ecConf.getParity(), pipeline.getNodes().size());
 
-    verify(placementPolicy).chooseDatanodes(excludedNodes, favoredNodes,
+    verify(placementPolicy).chooseDatanodes(excludedNodes, favoredNodes, Collections.emptySet(),
         ecConf.getRequiredNodes(), 0, containerSizeBytes);
   }
 

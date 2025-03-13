@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.hadoop.hdds.conf.ConfigurationSource;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
@@ -104,8 +105,9 @@ public final class SCMContainerPlacementRackAware
   protected List<DatanodeDetails> chooseDatanodesInternal(
       List<DatanodeDetails> usedNodes,
       List<DatanodeDetails> excludedNodes,
-      List<DatanodeDetails> favoredNodes, int nodesRequired,
-      long metadataSizeRequired, long dataSizeRequired)
+      List<DatanodeDetails> favoredNodes,
+      Set<String> datacenters,
+      int nodesRequired, long metadataSizeRequired, long dataSizeRequired)
       throws SCMException {
     Map<String, Long> mapSizeRequired = new HashMap<>();
     mapSizeRequired.put(META_DATA_SIZE_REQUIRED, metadataSizeRequired);
