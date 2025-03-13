@@ -168,7 +168,7 @@ class TestWritableRatisContainerProvider {
 
   private WritableRatisContainerProvider createSubject() {
     return new WritableRatisContainerProvider(conf,
-        pipelineManager, containerManager, policy, scmNodeManager, Collections.emptyMap());
+        pipelineManager, containerManager, policy);
   }
 
   private void verifyPipelineCreated() throws IOException {
