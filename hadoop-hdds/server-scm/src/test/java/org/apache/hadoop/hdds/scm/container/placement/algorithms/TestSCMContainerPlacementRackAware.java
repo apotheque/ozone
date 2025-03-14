@@ -652,7 +652,7 @@ public class TestSCMContainerPlacementRackAware {
     usedNodes.add(datanodes.get(1));
 
     List<DatanodeDetails> datanodeDetails = policy.chooseDatanodes(usedNodes,
-        excludedNodes, null, nodeNum, 0, 5);
+        excludedNodes, null, Collections.emptySet(), nodeNum, 0, 5);
     assertEquals(nodeNum, datanodeDetails.size());
 
     // New DN should be on different rack than DN0 & DN1
@@ -668,7 +668,7 @@ public class TestSCMContainerPlacementRackAware {
     usedNodes.add(datanodes.get(5));
 
     datanodeDetails = policy.chooseDatanodes(usedNodes,
-        excludedNodes, null, nodeNum, 0, 5);
+        excludedNodes, null, Collections.emptySet(), nodeNum, 0, 5);
     assertEquals(nodeNum, datanodeDetails.size());
 
     // New replica should be either on rack0 or rack1
@@ -692,7 +692,7 @@ public class TestSCMContainerPlacementRackAware {
     excludedNodes.add(datanodes.get(2));
 
     List<DatanodeDetails> datanodeDetails = policy.chooseDatanodes(usedNodes,
-        excludedNodes, null, nodeNum, 0, 5);
+        excludedNodes, null, Collections.emptySet(), nodeNum, 0, 5);
     assertEquals(nodeNum, datanodeDetails.size());
 
     assertTrue(cluster.isSameParent(
@@ -708,7 +708,7 @@ public class TestSCMContainerPlacementRackAware {
     usedNodes.add(datanodes.get(0));
 
     datanodeDetails = policy.chooseDatanodes(usedNodes,
-        excludedNodes, null, nodeNum, 0, 5);
+        excludedNodes, null, Collections.emptySet(), nodeNum, 0, 5);
     assertEquals(nodeNum, datanodeDetails.size());
 
     assertTrue(excludedNodes.get(0).getUuid() !=
@@ -720,7 +720,7 @@ public class TestSCMContainerPlacementRackAware {
     usedNodes.clear();
 
     datanodeDetails = policy.chooseDatanodes(usedNodes,
-        excludedNodes, null, nodeNum, 0, 5);
+        excludedNodes, null, Collections.emptySet(), nodeNum, 0, 5);
     assertEquals(nodeNum, datanodeDetails.size());
 
     assertTrue(excludedNodes.get(0).getUuid() !=
@@ -744,7 +744,7 @@ public class TestSCMContainerPlacementRackAware {
     excludedNodes.add(datanodes.get(1));
 
     List<DatanodeDetails> datanodeDetails = policy.chooseDatanodes(usedNodes,
-        excludedNodes, null, nodeNum, 0, 5);
+        excludedNodes, null, Collections.emptySet(), nodeNum, 0, 5);
 
     assertEquals(nodeNum, datanodeDetails.size());
 
@@ -762,7 +762,7 @@ public class TestSCMContainerPlacementRackAware {
     excludedNodes.add(datanodes.get(2));
 
     datanodeDetails = policy.chooseDatanodes(usedNodes,
-        excludedNodes, null, nodeNum, 0, 5);
+        excludedNodes, null, Collections.emptySet(), nodeNum, 0, 5);
 
     assertEquals(nodeNum, datanodeDetails.size());
 
@@ -787,7 +787,7 @@ public class TestSCMContainerPlacementRackAware {
     excludedNodes.add(datanodes.get(1));
 
     List<DatanodeDetails> datanodeDetails = policy.chooseDatanodes(null,
-        excludedNodes, null, nodeNum, 0, 5);
+        excludedNodes, null, Collections.emptySet(), nodeNum, 0, 5);
 
     assertEquals(nodeNum, datanodeDetails.size());
 
@@ -802,7 +802,7 @@ public class TestSCMContainerPlacementRackAware {
     excludedNodes.add(datanodes.get(2));
 
     datanodeDetails = policy.chooseDatanodes(null,
-        excludedNodes, null, nodeNum, 0, 5);
+        excludedNodes, null, Collections.emptySet(), nodeNum, 0, 5);
 
     assertEquals(nodeNum, datanodeDetails.size());
 
@@ -829,7 +829,7 @@ public class TestSCMContainerPlacementRackAware {
     int nodeNum = 5;
     Exception e =
         assertThrows(Exception.class,
-            () -> policyNoFallback.chooseDatanodes(usedNodes, null, null, nodeNum, 0, 15),
+            () -> policyNoFallback.chooseDatanodes(usedNodes, null, null, Collections.emptySet(), nodeNum, 0, 15),
             "Fallback prohibited, this call should fail");
     assertEquals("SCMException", e.getClass().getSimpleName());
 

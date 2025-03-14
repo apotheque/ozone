@@ -47,6 +47,7 @@ public interface PlacementPolicy {
    * @param usedNodes - List of nodes already chosen for pipeline
    * @param excludedNodes - list of nodes to be excluded.
    * @param favoredNodes - list of nodes preferred.
+   * @param datacenters - set of preferred datacenters.
    * @param nodesRequired - number of datanodes required.
    * @param dataSizeRequired - size required for the container.
    * @param metadataSizeRequired - size required for Ratis metadata.

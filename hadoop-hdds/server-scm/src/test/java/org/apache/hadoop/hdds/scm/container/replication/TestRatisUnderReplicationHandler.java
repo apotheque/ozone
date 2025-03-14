@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyLong;
@@ -467,7 +468,7 @@ public class TestRatisUnderReplicationHandler {
   @Test
   public void testCorrectUsedAndExcludedNodesPassed() throws IOException {
     PlacementPolicy mockPolicy = mock(PlacementPolicy.class);
-    when(mockPolicy.chooseDatanodes(any(), any(), any(),
+    when(mockPolicy.chooseDatanodes(any(), any(), any(), anySet(),
         anyInt(), anyLong(), anyLong()))
         .thenReturn(Collections.singletonList(
             MockDatanodeDetails.randomDatanodeDetails()));
@@ -513,7 +514,7 @@ public class TestRatisUnderReplicationHandler {
 
 
     verify(mockPolicy, times(1)).chooseDatanodes(
-        usedNodesCaptor.capture(), excludedNodesCaptor.capture(), any(),
+        usedNodesCaptor.capture(), excludedNodesCaptor.capture(), any(), anySet(),
         anyInt(), anyLong(), anyLong());
 
     List<DatanodeDetails> usedNodes = usedNodesCaptor.getValue();

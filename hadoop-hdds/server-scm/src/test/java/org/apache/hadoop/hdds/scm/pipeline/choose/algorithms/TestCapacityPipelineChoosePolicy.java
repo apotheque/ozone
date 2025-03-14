@@ -29,6 +29,7 @@ import java.util.Map;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
 import org.apache.hadoop.hdds.protocol.MockDatanodeDetails;
 import org.apache.hadoop.hdds.scm.PipelineChoosePolicy;
+import org.apache.hadoop.hdds.scm.PipelineRequestInformation;
 import org.apache.hadoop.hdds.scm.container.placement.metrics.SCMNodeMetric;
 import org.apache.hadoop.hdds.scm.node.NodeManager;
 import org.apache.hadoop.hdds.scm.pipeline.MockPipeline;
@@ -93,7 +94,8 @@ public class TestCapacityPipelineChoosePolicy {
     }
     for (int i = 0; i < 1000; i++) {
       // choosePipeline
-      Pipeline pipeline = policy.choosePipeline(pipelines, null);
+      PipelineRequestInformation pri = new PipelineRequestInformation.Builder().build();
+      Pipeline pipeline = policy.choosePipeline(pipelines, pri);
       assertNotNull(pipeline);
       selectedCount.put(pipeline, selectedCount.get(pipeline) + 1);
     }
