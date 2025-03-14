@@ -17,6 +17,7 @@
 
 package org.apache.hadoop.hdds.scm;
 
+import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -31,7 +32,7 @@ public final class PipelineRequestInformation {
    */
   public static class Builder {
     private long size;
-    private Set<String> datacenters;
+    private Set<String> datacenters = Collections.emptySet();
 
     public static Builder getBuilder() {
       return new Builder();

@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import org.apache.hadoop.hdds.client.ECReplicationConfig;
 import org.apache.hadoop.hdds.client.RatisReplicationConfig;
 import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
@@ -115,6 +116,7 @@ public class TestContainerInfo {
         .setContainerID(1234)
         .setPipelineID(PipelineID.randomId())
         .setState(OPEN)
-        .setOwner("scm");
+        .setOwner("scm")
+        .setDatacenters(Collections.emptySet());
   }
 }

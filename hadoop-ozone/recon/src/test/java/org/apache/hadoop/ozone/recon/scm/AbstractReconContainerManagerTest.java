@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
@@ -212,6 +213,7 @@ public class AbstractReconContainerManagerTest {
             .setReplicationConfig(StandaloneReplicationConfig.getInstance(ONE))
             .setOwner("test")
             .setState(state)
+            .setDatacenters(Collections.emptySet())
             .build();
     return new ContainerWithPipeline(containerInfo, pipeline);
   }
@@ -230,6 +232,7 @@ public class AbstractReconContainerManagerTest {
             .setReplicationConfig(StandaloneReplicationConfig.getInstance(ONE))
             .setOwner("test")
             .setState(state)
+            .setDatacenters(Collections.emptySet())
             .build();
     return new ContainerWithPipeline(containerInfo, pipeline);
   }
