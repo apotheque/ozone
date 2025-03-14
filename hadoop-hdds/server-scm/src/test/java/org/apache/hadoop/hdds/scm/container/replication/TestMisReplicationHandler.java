@@ -201,7 +201,7 @@ public abstract class TestMisReplicationHandler {
                     .collect(Collectors.toList());
     if (expectedNumberOfNodes > 0) {
       Mockito.when(mockedPlacementPolicy.chooseDatanodes(
-                      any(), any(), any(),
+                      any(), any(), any(), anySet(),
                       eq(copy.size()), Mockito.anyLong(), Mockito.anyLong()))
               .thenAnswer(invocation -> {
                 List<DatanodeDetails> datanodeDetails =

@@ -1039,9 +1039,9 @@ public class TestECUnderReplicationHandler {
             Pair.of(IN_SERVICE, 5));
 
     when(ecPlacementPolicy.chooseDatanodes(anyList(), anyList(),
-            isNull(), anyInt(), anyLong(), anyLong()))
+            isNull(), anySet(), anyInt(), anyLong(), anyLong()))
         .thenAnswer(invocationOnMock -> {
-          int numNodes = invocationOnMock.getArgument(3);
+          int numNodes = invocationOnMock.getArgument(4);
           List<DatanodeDetails> targets = new ArrayList<>();
           for (int i = 0; i < numNodes; i++) {
             targets.add(MockDatanodeDetails.randomDatanodeDetails());
@@ -1083,7 +1083,7 @@ public class TestECUnderReplicationHandler {
     contain the DN pending ADD.
      */
     when(ecPlacementPolicy.chooseDatanodes(anyList(), anyList(),
-            isNull(), anyInt(), anyLong(), anyLong()))
+            isNull(), anySet(), anyInt(), anyLong(), anyLong()))
         .thenAnswer(invocationOnMock -> {
           List<DatanodeDetails> usedList = invocationOnMock.getArgument(0);
           List<DatanodeDetails> excludeList = invocationOnMock.getArgument(1);
@@ -1208,7 +1208,7 @@ public class TestECUnderReplicationHandler {
 
   /**
    * Helper to mock and verify calls to
-   * {@link PlacementPolicy#chooseDatanodes(List, List, int, long, long)}.
+   * {@link PlacementPolicy#chooseDatanodes(List, List, Set, long, long)}.
    */
   private static class PlacementPolicySpy {
 
@@ -1220,11 +1220,11 @@ public class TestECUnderReplicationHandler {
     PlacementPolicySpy(PlacementPolicy placementPolicy, int totalNodes)
         throws IOException {
       when(placementPolicy.chooseDatanodes(any(), any(),
-          any(), anyInt(), anyLong(), anyLong())
+          any(), anySet(), anyInt(), anyLong(), anyLong())
       ).thenAnswer(invocation -> {
         final Collection<DatanodeDetails> used = invocation.getArgument(0);
         final Collection<DatanodeDetails> excluded = invocation.getArgument(1);
-        final int nodesRequired = invocation.getArgument(3);
+        final int nodesRequired = invocation.getArgument(4);
 
         final int availableNodes = totalNodes - excluded.size() - used.size();
         usedNodesLists.add(new ArrayList<>(used));

@@ -83,7 +83,7 @@ public class TestECPipelineProvider {
         Mockito.anyLong()))
         .thenAnswer(invocation -> {
           List<DatanodeDetails> dns = new ArrayList<>();
-          for (int i = 0; i < (int) invocation.getArguments()[2]; i++) {
+          for (int i = 0; i < (int) invocation.getArguments()[3]; i++) {
             dns.add(MockDatanodeDetails.randomDatanodeDetails());
           }
           return dns;
