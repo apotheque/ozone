@@ -384,7 +384,7 @@ public class ContainerManagerImpl implements ContainerManager {
       try {
         ContainerInfo containerInfo = getContainer(cid);
         if (!containerInfo.getOwner().equals(owner) ||
-            containerInfo.getDatacenters().equals(pipeline.getDatacenters())) {
+            !containerInfo.getDatacenters().equals(pipeline.getDatacenters())) {
           containerIDIterator.remove();
         }
       } catch (ContainerNotFoundException e) {

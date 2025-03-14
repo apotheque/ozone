@@ -277,6 +277,7 @@ public class TestBlocksEndPoint {
             .setReplicationConfig(StandaloneReplicationConfig.getInstance(ONE))
             .setOwner("test")
             .setState(state)
+            .setDatacenters(Collections.emptySet())
             .build();
     return new ContainerWithPipeline(containerInfo, localPipeline);
   }

@@ -1093,6 +1093,7 @@ public class TestContainerEndpoint {
             .setReplicationConfig(StandaloneReplicationConfig.getInstance(ONE))
             .setOwner("test")
             .setState(state)
+            .setDatacenters(Collections.emptySet())
             .build();
     return new ContainerWithPipeline(containerInfo, localPipeline);
   }
