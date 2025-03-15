@@ -211,7 +211,7 @@ public class TestLegacyReplicationManager {
         Mockito.any(), Mockito.any(), Mockito.anySet(), Mockito.anyInt(),
             Mockito.anyLong(), Mockito.anyLong()))
         .thenAnswer(invocation -> {
-          int count = (int) invocation.getArguments()[2];
+          int count = (int) invocation.getArguments()[3];
           return IntStream.range(0, count)
               .mapToObj(i -> randomDatanodeDetails())
               .collect(Collectors.toList());
@@ -1431,7 +1431,7 @@ public class TestLegacyReplicationManager {
                 SCMException.ResultCodes.FAILED_TO_FIND_SUITABLE_NODE);
           })
           .thenAnswer(invocation -> {
-            int nodesRequired = invocation.getArgument(2);
+            int nodesRequired = invocation.getArgument(3);
             List<DatanodeDetails> nodes = new ArrayList<>(nodesRequired);
             while (nodesRequired != 0) {
               nodes.add(MockDatanodeDetails.randomDatanodeDetails());
@@ -1517,7 +1517,7 @@ public class TestLegacyReplicationManager {
               throw new SCMException(
                   SCMException.ResultCodes.FAILED_TO_FIND_SUITABLE_NODE);
             } else {
-              int nodesRequired = invocation.getArgument(2);
+              int nodesRequired = invocation.getArgument(3);
               List<DatanodeDetails> nodes = new ArrayList<>(nodesRequired);
               while (nodesRequired != 0) {
                 DatanodeDetails dn =
