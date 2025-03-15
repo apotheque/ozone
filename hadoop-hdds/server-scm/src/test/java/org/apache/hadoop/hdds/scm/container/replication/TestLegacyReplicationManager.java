@@ -208,7 +208,7 @@ public class TestLegacyReplicationManager {
     ecContainerPlacementPolicy = Mockito.mock(PlacementPolicy.class);
 
     Mockito.when(ratisContainerPlacementPolicy.chooseDatanodes(
-        Mockito.any(), Mockito.any(), Mockito.anyInt(),
+        Mockito.any(), Mockito.any(), Mockito.anySet(), Mockito.anyInt(),
             Mockito.anyLong(), Mockito.anyLong()))
         .thenAnswer(invocation -> {
           int count = (int) invocation.getArguments()[2];
@@ -1424,7 +1424,7 @@ public class TestLegacyReplicationManager {
       of required targets.
        */
       Mockito.when(ratisContainerPlacementPolicy.chooseDatanodes(
-          Mockito.any(), Mockito.any(), Mockito.anyInt(),
+          Mockito.any(), Mockito.any(), Mockito.anySet(), Mockito.anyInt(),
               Mockito.anyLong(), Mockito.anyLong()))
           .thenAnswer(invocation -> {
             throw new SCMException(
@@ -1509,7 +1509,7 @@ public class TestLegacyReplicationManager {
     public void testUnderRepQuasiClosedContainerBlockedByUnhealthyReplicas()
         throws IOException, TimeoutException {
       Mockito.when(ratisContainerPlacementPolicy.chooseDatanodes(
-              Mockito.anyList(), Mockito.any(), Mockito.anyInt(),
+              Mockito.anyList(), Mockito.any(), Mockito.anySet(), Mockito.anyInt(),
               Mockito.anyLong(), Mockito.anyLong()))
           .thenAnswer(invocation -> {
             List<DatanodeDetails> excluded = invocation.getArgument(0);

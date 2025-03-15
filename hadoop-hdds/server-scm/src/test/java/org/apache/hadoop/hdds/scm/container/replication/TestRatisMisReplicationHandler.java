@@ -97,7 +97,7 @@ public class TestRatisMisReplicationHandler extends TestMisReplicationHandler {
     Mockito.when(placementPolicy.validateContainerPlacement(anyList(),
                     anyInt())).thenReturn(mockedContainerPlacementStatus);
     Mockito.when(placementPolicy.chooseDatanodes(
-                    Mockito.any(), Mockito.any(), Mockito.any(), anySet(),
+                    Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anySet(),
                     Mockito.anyInt(), Mockito.anyLong(), Mockito.anyLong()))
             .thenThrow(new IOException("No nodes found"));
     Assertions.assertThrows(SCMException.class, () -> testMisReplication(

@@ -17,12 +17,10 @@
  */
 package org.apache.hadoop.hdds.scm.container;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.Comparator;
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.hadoop.hdds.client.ECReplicationConfig;
 import org.apache.hadoop.hdds.client.ReplicationConfig;
 import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
@@ -30,12 +28,16 @@ import org.apache.hadoop.hdds.scm.pipeline.PipelineID;
 import org.apache.hadoop.hdds.utils.db.Codec;
 import org.apache.hadoop.hdds.utils.db.DelegatedCodec;
 import org.apache.hadoop.hdds.utils.db.Proto2Codec;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import static java.lang.Math.max;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.ratis.util.Preconditions;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Set;
+
+import static java.lang.Math.max;
 
 /**
  * Class wraps ozone container info.
@@ -104,7 +106,8 @@ public final class ContainerInfo implements Comparable<ContainerInfo> {
       long deleteTransactionId,
       long sequenceId,
       ReplicationConfig repConfig,
-      Clock clock) {
+      Clock clock,
+      Set<String> datacenters) {
     this.containerID = ContainerID.valueOf(containerID);
     this.pipelineID = pipelineID;
     this.usedBytes = usedBytes;
@@ -117,7 +120,7 @@ public final class ContainerInfo implements Comparable<ContainerInfo> {
     this.sequenceId = sequenceId;
     this.replicationConfig = repConfig;
     this.clock = clock;
-    datacenters = b.datacenters;
+    this.datacenters = datacenters;
   }
 
   public static ContainerInfo fromProtobuf(HddsProtos.ContainerInfoProto info) {
@@ -463,7 +466,7 @@ public final class ContainerInfo implements Comparable<ContainerInfo> {
     public ContainerInfo build() {
       return new ContainerInfo(containerID, state, pipelineID,
           used, keys, stateEnterTime, owner, deleteTransactionId,
-          sequenceId, replicationConfig, clock);
+          sequenceId, replicationConfig, clock, datacenters);
     }
   }
 
