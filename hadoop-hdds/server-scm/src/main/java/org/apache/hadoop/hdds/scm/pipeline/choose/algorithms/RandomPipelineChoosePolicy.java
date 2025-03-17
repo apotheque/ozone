@@ -23,6 +23,7 @@ import org.apache.hadoop.hdds.scm.pipeline.Pipeline;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Random choose policy that randomly chooses pipeline.
@@ -46,18 +47,19 @@ public class RandomPipelineChoosePolicy implements PipelineChoosePolicy {
    *         could be selected.
    */
   @Override
-  public int choosePipelineIndex(List<Pipeline> pipelineList,
-      PipelineRequestInformation pri) {
-    Set<String> datacenters = pri.getDatacenters();
-    if (datacenters.isEmpty()) {
-      return (int) (Math.random() * pipelineList.size());
+  public int choosePipelineIndex(List<Pipeline> pipelineList, PipelineRequestInformation pri) {
+    Set<String> requestedDatacenters = pri.getDatacenters();
+
+    List<Pipeline> matchingPipelines = requestedDatacenters.isEmpty()
+            ? pipelineList
+            : pipelineList.stream()
+            .filter(p -> p.getDatacenters().equals(requestedDatacenters))
+            .collect(Collectors.toList());
+
+    if (matchingPipelines.isEmpty()) {
+      return -1;
     }
-    // find first pipeline with matching set of nodes
-    for (int i = 0; i < pipelineList.size(); i++) {
-      if (pipelineList.get(i).getDatacenters().equals(datacenters)) {
-        return i;
-      }
-    }
-    return -1;
+
+    return (int) (Math.random() * matchingPipelines.size());
   }
 }
