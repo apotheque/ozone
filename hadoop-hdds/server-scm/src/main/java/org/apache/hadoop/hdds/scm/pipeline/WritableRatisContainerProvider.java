@@ -198,6 +198,12 @@ public class WritableRatisContainerProvider
       Pipeline pipeline = pipelineChoosePolicy.choosePipeline(
           availablePipelines, req);
 
+      // no suitable pipeline
+      if (pipeline == null) {
+        availablePipelines.clear();
+        break;
+      }
+
       // look for OPEN containers that match the criteria.
       final ContainerInfo containerInfo = containerManager.getMatchingContainer(
           req.getSize(), owner, pipeline, excludeList.getContainerIds());
