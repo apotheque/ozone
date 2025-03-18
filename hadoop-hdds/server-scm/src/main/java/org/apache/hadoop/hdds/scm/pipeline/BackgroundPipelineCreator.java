@@ -294,23 +294,21 @@ public class BackgroundPipelineCreator implements SCMService {
 
   @Override
   public boolean shouldRun() {
-    return false;
-//    serviceLock.lock();
-//    try {
-//      // check one-short run
-//      if (oneShotRun) {
-//        oneShotRun = false;
-//        return true;
-//      }
+    serviceLock.lock();
+    try {
+      // check one-short run
+      if (oneShotRun) {
+        oneShotRun = false;
+        return true;
+      }
 
       // If safe mode is off, then this SCMService starts to run with a delay.
-//      return serviceStatus == ServiceStatus.RUNNING && (
-//          createPipelineInSafeMode ||
-//          clock.millis() - lastTimeToBeReadyInMillis >= waitTimeInMillis);
-//      return false;
-//    } finally {
-//      serviceLock.unlock();
-//    }
+      return serviceStatus == ServiceStatus.RUNNING && (
+          createPipelineInSafeMode ||
+          clock.millis() - lastTimeToBeReadyInMillis >= waitTimeInMillis);
+    } finally {
+      serviceLock.unlock();
+    }
   }
 
   private boolean isOneShotRunNeeded() {
