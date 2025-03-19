@@ -34,7 +34,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -67,7 +66,7 @@ public class WritableRatisContainerProvider
 
   @Override
   public ContainerInfo getContainer(final long size,
-      ReplicationConfig repConfig, String owner, ExcludeList excludeList, String datacenters)
+      ReplicationConfig repConfig, String owner, ExcludeList excludeList, Set<String> datacenters)
       throws IOException {
     /*
       Here is the high level logic.
@@ -87,14 +86,8 @@ public class WritableRatisContainerProvider
 
     //TODO we need to continue the refactor to use repConfig everywhere
     //in downstream managers.
-    Set<String> requestedDcs = Collections.emptySet();
-    if (datacenters != null) {
-      requestedDcs = Arrays.stream(datacenters.split(","))
-          .collect(Collectors.toSet());
-    }
-
     PipelineRequestInformation req = PipelineRequestInformation.Builder.getBuilder()
-        .setSize(size).setDatacenters(requestedDcs).build();
+        .setSize(size).setDatacenters(datacenters).build();
 
     ContainerInfo containerInfo = getContainer(repConfig, owner, excludeList, req);
     if (containerInfo != null) {
@@ -106,7 +99,7 @@ public class WritableRatisContainerProvider
       //  and factors are handled by pipeline creator
       // TODO: why is pipeline created without accounting for excludeList???
       Pipeline pipeline = pipelineManager.createPipeline(repConfig, Collections.emptyList(),
-          Collections.emptyList(), requestedDcs);
+          Collections.emptyList(), datacenters);
 
       // wait until pipeline is ready
       pipelineManager.waitPipelineReady(pipeline.getId(), 0);

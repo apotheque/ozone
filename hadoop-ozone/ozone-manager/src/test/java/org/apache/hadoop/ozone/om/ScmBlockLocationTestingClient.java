@@ -44,15 +44,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.apache.hadoop.hdds.protocol.MockDatanodeDetails.randomDatanodeDetails;
-import static org.apache.hadoop.hdds.protocol.proto
-    .ScmBlockLocationProtocolProtos.DeleteScmBlockResult.Result;
-import static org.apache.hadoop.hdds.protocol.proto
-    .ScmBlockLocationProtocolProtos.DeleteScmBlockResult.Result.success;
-import static org.apache.hadoop.hdds.protocol.proto
-    .ScmBlockLocationProtocolProtos.DeleteScmBlockResult.Result.unknownFailure;
+import static org.apache.hadoop.hdds.protocol.proto.ScmBlockLocationProtocolProtos.DeleteScmBlockResult.Result;
+import static org.apache.hadoop.hdds.protocol.proto.ScmBlockLocationProtocolProtos.DeleteScmBlockResult.Result.success;
+import static org.apache.hadoop.hdds.protocol.proto.ScmBlockLocationProtocolProtos.DeleteScmBlockResult.Result.unknownFailure;
 
 /**
  * This is a testing client that allows us to intercept calls from OzoneManager
@@ -121,10 +119,10 @@ public class ScmBlockLocationTestingClient implements ScmBlockLocationProtocol {
   @Override
   public List<AllocatedBlock> allocateBlock(long size, int num,
       ReplicationConfig config,
-      String owner, ExcludeList excludeList, String clientMachine, String datacenters)
+      String owner, ExcludeList excludeList, String clientMachine, Set<String> datacenters)
       throws IOException {
     DatanodeDetails datanodeDetails = randomDatanodeDetails();
-    Pipeline pipeline = createPipeline(datanodeDetails);
+    Pipeline pipeline = createPipeline(datanodeDetails, datacenters);
     long containerID = Time.monotonicNow();
     long localID = Time.monotonicNow();
     AllocatedBlock.Builder abb =
@@ -134,7 +132,7 @@ public class ScmBlockLocationTestingClient implements ScmBlockLocationProtocol {
     return Collections.singletonList(abb.build());
   }
 
-  private Pipeline createPipeline(DatanodeDetails datanode) {
+  private Pipeline createPipeline(DatanodeDetails datanode, Set<String> datacenters) {
     List<DatanodeDetails> dns = new ArrayList<>();
     dns.add(datanode);
     Pipeline pipeline = Pipeline.newBuilder()
@@ -143,6 +141,7 @@ public class ScmBlockLocationTestingClient implements ScmBlockLocationProtocol {
         .setReplicationConfig(
             StandaloneReplicationConfig.getInstance(ReplicationFactor.ONE))
         .setNodes(dns)
+        .setDatacenters(datacenters)
         .build();
     return pipeline;
   }

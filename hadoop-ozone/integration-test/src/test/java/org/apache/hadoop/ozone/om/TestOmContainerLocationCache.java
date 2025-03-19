@@ -114,9 +114,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -702,7 +702,7 @@ public class TestOmContainerLocationCache {
             anyString(),
             any(ExcludeList.class),
             anyString(),
-            isNull()))
+            anySet()))
         .thenReturn(Collections.singletonList(block));
   }
 
@@ -719,7 +719,7 @@ public class TestOmContainerLocationCache {
             anyString(),
             any(ExcludeList.class),
             anyString(),
-            isNull()))
+            anySet()))
         .thenReturn(Collections.singletonList(block));
   }
 

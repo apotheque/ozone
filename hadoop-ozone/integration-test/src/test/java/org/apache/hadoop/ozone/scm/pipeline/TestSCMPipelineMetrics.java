@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
@@ -105,7 +106,7 @@ public class TestSCMPipelineMetrics {
         cluster.getStorageContainerManager().getScmBlockManager()
             .allocateBlock(5,
                 RatisReplicationConfig.getInstance(ReplicationFactor.ONE),
-                "Test", new ExcludeList(), null);
+                "Test", new ExcludeList(), Collections.emptySet());
     MetricsRecordBuilder metrics =
         getMetrics(SCMPipelineMetrics.class.getSimpleName());
     Pipeline pipeline = block.getPipeline();

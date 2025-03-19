@@ -18,6 +18,7 @@
 package org.apache.hadoop.hdds.scm.protocol;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -197,7 +198,7 @@ public final class ScmBlockLocationProtocolServerSideTranslatorPB
                 request.getEcReplicationConfig()),
             request.getOwner(),
             ExcludeList.getFromProtoBuf(request.getExcludeList()),
-            request.getClient(), request.hasDatacenters() ? request.getDatacenters() : null);
+            request.getClient(), new HashSet<>(request.getDatacentersList()));
 
     AllocateScmBlockResponseProto.Builder builder =
         AllocateScmBlockResponseProto.newBuilder();
