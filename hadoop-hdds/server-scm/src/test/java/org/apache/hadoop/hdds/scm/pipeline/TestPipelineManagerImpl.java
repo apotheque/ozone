@@ -930,7 +930,7 @@ public class TestPipelineManagerImpl {
 
     
     ContainerInfo c = provider.getContainer(1, repConfig,
-        owner, new ExcludeList(), null);
+        owner, new ExcludeList(), Collections.emptySet());
     Assertions.assertTrue(c.equals(container),
         "Expected container was returned");
 

@@ -38,6 +38,7 @@ import org.mockito.quality.Strictness;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -84,7 +85,7 @@ class TestWritableRatisContainerProvider {
     existingPipelines(pipeline);
 
     ContainerInfo container = createSubject().getContainer(CONTAINER_SIZE, REPLICATION_CONFIG, OWNER, NO_EXCLUSION,
-        null);
+            Collections.emptySet());
 
     assertSame(existingContainer, container);
     verifyPipelineNotCreated();
@@ -99,7 +100,7 @@ class TestWritableRatisContainerProvider {
     existingPipelines(pipelineWithoutContainer, pipeline);
 
     ContainerInfo container = createSubject().getContainer(CONTAINER_SIZE, REPLICATION_CONFIG, OWNER, NO_EXCLUSION,
-        null);
+            Collections.emptySet());
 
     assertSame(existingContainer, container);
     verifyPipelineNotCreated();
@@ -110,7 +111,7 @@ class TestWritableRatisContainerProvider {
     ContainerInfo newContainer = createNewContainerOnDemand();
 
     ContainerInfo container = createSubject().getContainer(CONTAINER_SIZE, REPLICATION_CONFIG, OWNER, NO_EXCLUSION,
-        null);
+            Collections.emptySet());
 
     assertSame(newContainer, container);
     verifyPipelineCreated();
@@ -121,7 +122,7 @@ class TestWritableRatisContainerProvider {
     throwWhenCreatePipeline();
 
     assertThrows(IOException.class,
-        () -> createSubject().getContainer(CONTAINER_SIZE, REPLICATION_CONFIG, OWNER, NO_EXCLUSION, null));
+        () -> createSubject().getContainer(CONTAINER_SIZE, REPLICATION_CONFIG, OWNER, NO_EXCLUSION, Collections.emptySet()));
 
     verifyPipelineCreated();
   }
