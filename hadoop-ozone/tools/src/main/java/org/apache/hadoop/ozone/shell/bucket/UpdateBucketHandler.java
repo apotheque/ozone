@@ -61,6 +61,9 @@ public class UpdateBucketHandler extends BucketHandler {
     }
 
     if (datacenters != null && !datacenters.isEmpty()) {
+      if (!datacenters.matches("^\\w+(,\\w+)*$")) {
+        throw new IllegalArgumentException("Invalid datacenters format. Expected a comma separated string.");
+      }
       bucket.getMetadata().put(OzoneConsts.DATACENTERS, datacenters);
     }
 
