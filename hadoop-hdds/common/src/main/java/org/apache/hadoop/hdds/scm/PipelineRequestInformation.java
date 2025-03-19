@@ -19,6 +19,7 @@
 package org.apache.hadoop.hdds.scm;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -55,7 +56,7 @@ public final class PipelineRequestInformation {
      * @return Builder for PipelineRequestInformation
      */
     public Builder setDatacenters(Set<String> datacenters) {
-      this.datacenters = datacenters;
+      this.datacenters = new HashSet<>(datacenters);
       return this;
     }
 
