@@ -26,6 +26,7 @@ import org.apache.hadoop.hdds.scm.container.ContainerInfo;
 import org.apache.hadoop.hdds.scm.container.ContainerManager;
 import org.apache.hadoop.hdds.scm.container.common.helpers.ExcludeList;
 import org.apache.hadoop.hdds.scm.exceptions.SCMException;
+import org.apache.hadoop.hdds.scm.node.NodeManager;
 import org.apache.hadoop.hdds.scm.pipeline.choose.algorithms.RandomPipelineChoosePolicy;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
@@ -37,6 +38,7 @@ import org.mockito.quality.Strictness;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -72,6 +74,9 @@ class TestWritableRatisContainerProvider {
   @Mock
   private ContainerManager containerManager;
 
+  @Mock
+  private NodeManager scmNodeManager;
+
   @Test
   void returnsExistingContainer() throws Exception {
     Pipeline pipeline = MockPipeline.createPipeline(3);
@@ -79,7 +84,8 @@ class TestWritableRatisContainerProvider {
 
     existingPipelines(pipeline);
 
-    ContainerInfo container = createSubject().getContainer(CONTAINER_SIZE, REPLICATION_CONFIG, OWNER, NO_EXCLUSION);
+    ContainerInfo container = createSubject().getContainer(CONTAINER_SIZE, REPLICATION_CONFIG, OWNER, NO_EXCLUSION,
+            Collections.emptySet());
 
     assertSame(existingContainer, container);
     verifyPipelineNotCreated();
@@ -93,7 +99,8 @@ class TestWritableRatisContainerProvider {
     Pipeline pipelineWithoutContainer = MockPipeline.createPipeline(3);
     existingPipelines(pipelineWithoutContainer, pipeline);
 
-    ContainerInfo container = createSubject().getContainer(CONTAINER_SIZE, REPLICATION_CONFIG, OWNER, NO_EXCLUSION);
+    ContainerInfo container = createSubject().getContainer(CONTAINER_SIZE, REPLICATION_CONFIG, OWNER, NO_EXCLUSION,
+            Collections.emptySet());
 
     assertSame(existingContainer, container);
     verifyPipelineNotCreated();
@@ -103,7 +110,8 @@ class TestWritableRatisContainerProvider {
   void createsNewContainerIfNoneFound() throws Exception {
     ContainerInfo newContainer = createNewContainerOnDemand();
 
-    ContainerInfo container = createSubject().getContainer(CONTAINER_SIZE, REPLICATION_CONFIG, OWNER, NO_EXCLUSION);
+    ContainerInfo container = createSubject().getContainer(CONTAINER_SIZE, REPLICATION_CONFIG, OWNER, NO_EXCLUSION,
+            Collections.emptySet());
 
     assertSame(newContainer, container);
     verifyPipelineCreated();
@@ -114,7 +122,8 @@ class TestWritableRatisContainerProvider {
     throwWhenCreatePipeline();
 
     assertThrows(IOException.class,
-        () -> createSubject().getContainer(CONTAINER_SIZE, REPLICATION_CONFIG, OWNER, NO_EXCLUSION));
+        () -> createSubject().getContainer(CONTAINER_SIZE, REPLICATION_CONFIG, OWNER, NO_EXCLUSION,
+                Collections.emptySet()));
 
     verifyPipelineCreated();
   }
@@ -144,6 +153,8 @@ class TestWritableRatisContainerProvider {
     Pipeline newPipeline = MockPipeline.createPipeline(3);
     when(pipelineManager.createPipeline(REPLICATION_CONFIG))
         .thenReturn(newPipeline);
+    when(pipelineManager.createPipeline(REPLICATION_CONFIG, emptyList(), emptyList(), emptySet()))
+        .thenReturn(newPipeline);
 
     when(pipelineManager.getPipelines(REPLICATION_CONFIG, OPEN, emptySet(), emptySet()))
         .thenReturn(emptyList())
@@ -153,7 +164,7 @@ class TestWritableRatisContainerProvider {
   }
 
   private void throwWhenCreatePipeline() throws IOException {
-    when(pipelineManager.createPipeline(REPLICATION_CONFIG))
+    when(pipelineManager.createPipeline(REPLICATION_CONFIG, emptyList(), emptyList(), emptySet()))
         .thenThrow(new SCMException(SCMException.ResultCodes.FAILED_TO_FIND_SUITABLE_NODE));
   }
 
@@ -166,7 +177,7 @@ class TestWritableRatisContainerProvider {
     verify(pipelineManager, times(2))
         .getPipelines(REPLICATION_CONFIG, OPEN, emptySet(), emptySet());
     verify(pipelineManager)
-        .createPipeline(REPLICATION_CONFIG);
+        .createPipeline(REPLICATION_CONFIG, emptyList(), emptyList(), emptySet());
   }
 
   private void verifyPipelineNotCreated() throws IOException {

@@ -257,8 +257,9 @@ public final class ReplicationTestUtil {
       protected List<DatanodeDetails> chooseDatanodesInternal(
               List<DatanodeDetails> usedNodes,
               List<DatanodeDetails> excludedNodes,
-              List<DatanodeDetails> favoredNodes, int nodesRequiredToChoose,
-              long metadataSizeRequired, long dataSizeRequired) {
+              List<DatanodeDetails> favoredNodes,
+              Set<String> datacenters,
+              int nodesRequiredToChoose, long metadataSizeRequired, long dataSizeRequired) {
         List<DatanodeDetails> dns = new ArrayList<>();
         for (int i = 0; i < nodesRequiredToChoose; i++) {
           dns.add(MockDatanodeDetails.randomDatanodeDetails());
@@ -287,8 +288,9 @@ public final class ReplicationTestUtil {
       protected List<DatanodeDetails> chooseDatanodesInternal(
               List<DatanodeDetails> usedNodes,
               List<DatanodeDetails> excludedNodes,
-              List<DatanodeDetails> favoredNodes, int nodesRequiredToChoose,
-              long metadataSizeRequired, long dataSizeRequired)
+              List<DatanodeDetails> favoredNodes,
+              Set<String> datacenters,
+              int nodesRequiredToChoose, long metadataSizeRequired, long dataSizeRequired)
               throws SCMException {
         if (nodesRequiredToChoose > 1) {
           throw new IllegalArgumentException("Only one node is allowed");
@@ -315,8 +317,9 @@ public final class ReplicationTestUtil {
       protected List<DatanodeDetails> chooseDatanodesInternal(
               List<DatanodeDetails> usedNodes,
               List<DatanodeDetails> excludedNodes,
-              List<DatanodeDetails> favoredNodes, int nodesRequiredToChoose,
-              long metadataSizeRequired, long dataSizeRequired)
+              List<DatanodeDetails> favoredNodes,
+              Set<String> datacenters,
+              int nodesRequiredToChoose, long metadataSizeRequired, long dataSizeRequired)
               throws SCMException {
         throw new SCMException("No nodes available",
                 FAILED_TO_FIND_SUITABLE_NODE);
@@ -342,8 +345,9 @@ public final class ReplicationTestUtil {
       protected List<DatanodeDetails> chooseDatanodesInternal(
           List<DatanodeDetails> usedNodes,
           List<DatanodeDetails> excludedNodes,
-          List<DatanodeDetails> favoredNodes, int nodesRequiredToChoose,
-          long metadataSizeRequired, long dataSizeRequired)
+          List<DatanodeDetails> favoredNodes,
+          Set<String> datacenters,
+          int nodesRequiredToChoose, long metadataSizeRequired, long dataSizeRequired)
           throws SCMException {
         if (nodesRequiredToChoose >= throwWhenThisOrMoreNodesRequested) {
           throw new SCMException("No nodes available",

@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Timeout;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Collections;
 import java.util.function.Function;
 
 import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.ReplicationFactor.THREE;
@@ -120,7 +121,7 @@ class TestSafeMode {
           RatisReplicationConfig.getInstance(THREE);
       assertThrows(IOException.class, () -> cluster.getStorageContainerManager()
           .getWritableContainerFactory()
-          .getContainer(MB, replication, OZONE, new ExcludeList()));
+          .getContainer(MB, replication, OZONE, new ExcludeList(), Collections.emptySet()));
     } finally {
       IOUtils.closeQuietly(fs);
     }

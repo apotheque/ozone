@@ -4349,4 +4349,16 @@
       A key of the cache entry is a pair of bucket and the requested key path.
     </description>
   </property>
+
+  <property>
+    <name>ozone.scm.dc.datanode.mapping</name>
+    <value></value>
+    <tag>SCM</tag>
+    <description>
+      This property defines a mapping that associates each DataNode with its corresponding data center.
+      The mapping is specified as a comma-separated list of pairs in the format `hostname:ratis_port=dc_name`.
+      By establishing this association, Ozone can identify which data center a DataNode belongs to,
+      enabling more efficient storage management and data placement across data centers.
+    </description>
+  </property>
 </configuration>

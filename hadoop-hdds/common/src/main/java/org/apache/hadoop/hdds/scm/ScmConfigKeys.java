@@ -617,6 +617,13 @@ public final class ScmConfigKeys {
       "ozone.scm.ha.dbtransactionbuffer.flush.interval";
   public static final long
       OZONE_SCM_HA_DBTRANSACTIONBUFFER_FLUSH_INTERVAL_DEFAULT = 600 * 1000L;
+
+  public static final String OZONE_SCM_DC_DATANODE_MAPPING_KEY =
+      "ozone.scm.dc.datanode.mapping";
+
+  public static final String OZONE_SCM_DC_DATANODE_MAPPING_DEFAULT =
+      "";
+
   /**
    * Never constructed.
    */

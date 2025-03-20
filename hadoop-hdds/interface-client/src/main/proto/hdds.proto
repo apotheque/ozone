@@ -129,6 +129,7 @@ message Pipeline {
     optional ECReplicationConfig ecReplicationConfig = 11;
     // TODO(runzhiwang): when leaderID is gone, specify 6 as the index of leaderID128
     optional UUID leaderID128 = 100;
+    repeated string datacenters = 103;
 }
 
 message KeyValue {
@@ -239,6 +240,7 @@ message ContainerInfoProto {
     optional ReplicationFactor replicationFactor  = 10;
     required ReplicationType replicationType  = 11;
     optional ECReplicationConfig ecReplicationConfig = 12;
+    repeated string datacenters = 13;
 }
 
 message ContainerWithPipeline {

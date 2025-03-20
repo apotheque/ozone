@@ -407,6 +407,9 @@ public final class OzoneConsts {
   public static final String GDPR_SECRET = "secret";
   public static final String GDPR_ALGORITHM = "algorithm";
 
+  // DATACENTERS
+  public static final String DATACENTERS = "datacenters";
+
   /**
    * Block key name as illegal characters
    *

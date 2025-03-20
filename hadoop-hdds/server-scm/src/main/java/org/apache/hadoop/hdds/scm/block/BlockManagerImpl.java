@@ -16,14 +16,6 @@
  */
 package org.apache.hadoop.hdds.scm.block;
 
-import javax.management.ObjectName;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
 import org.apache.hadoop.hdds.client.BlockID;
 import org.apache.hadoop.hdds.client.ContainerBlockID;
 import org.apache.hadoop.hdds.client.ReplicationConfig;
@@ -44,12 +36,20 @@ import org.apache.hadoop.hdds.scm.server.StorageContainerManager;
 import org.apache.hadoop.metrics2.util.MBeans;
 import org.apache.hadoop.ozone.common.BlockGroup;
 import org.apache.hadoop.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.management.ObjectName;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import static org.apache.hadoop.hdds.scm.exceptions.SCMException.ResultCodes.INVALID_BLOCK_SIZE;
 import static org.apache.hadoop.hdds.scm.ha.SequenceIdGenerator.LOCAL_ID;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /** Block Manager manages the block access for SCM. */
@@ -148,7 +148,7 @@ public class BlockManagerImpl implements BlockManager, BlockmanagerMXBean {
   @Override
   public AllocatedBlock allocateBlock(final long size,
       ReplicationConfig replicationConfig,
-      String owner, ExcludeList excludeList)
+      String owner, ExcludeList excludeList, Set<String> datacenters)
       throws IOException {
     if (LOG.isTraceEnabled()) {
       LOG.trace("Size : {} , replicationConfig: {}", size, replicationConfig);
@@ -164,7 +164,7 @@ public class BlockManagerImpl implements BlockManager, BlockmanagerMXBean {
     }
 
     ContainerInfo containerInfo = writableContainerFactory.getContainer(
-        size, replicationConfig, owner, excludeList);
+        size, replicationConfig, owner, excludeList, datacenters);
 
     if (containerInfo != null) {
       return newBlock(containerInfo);

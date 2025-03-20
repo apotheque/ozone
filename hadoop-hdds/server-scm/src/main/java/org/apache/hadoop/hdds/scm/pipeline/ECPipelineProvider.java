@@ -71,15 +71,15 @@ public class ECPipelineProvider extends PipelineProvider<ECReplicationConfig> {
   public synchronized Pipeline create(ECReplicationConfig replicationConfig)
       throws IOException {
     return create(replicationConfig, Collections.emptyList(),
-        Collections.emptyList());
+        Collections.emptyList(), Collections.emptySet());
   }
 
   @Override
   protected Pipeline create(ECReplicationConfig replicationConfig,
-      List<DatanodeDetails> excludedNodes, List<DatanodeDetails> favoredNodes)
+      List<DatanodeDetails> excludedNodes, List<DatanodeDetails> favoredNodes, Set<String> datacenters)
       throws IOException {
     List<DatanodeDetails> dns = placementPolicy
-        .chooseDatanodes(excludedNodes, favoredNodes,
+        .chooseDatanodes(excludedNodes, favoredNodes, datacenters,
             replicationConfig.getRequiredNodes(), 0, this.containerSizeBytes);
     return create(replicationConfig, dns);
   }

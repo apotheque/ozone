@@ -39,6 +39,7 @@ import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -79,11 +80,11 @@ public class TestECPipelineProvider {
         StorageUnit.BYTES);
     // Placement policy will always return EC number of random nodes.
     when(placementPolicy.chooseDatanodes(Mockito.anyList(),
-        Mockito.anyList(), Mockito.anyInt(), Mockito.anyLong(),
+        Mockito.anyList(), Mockito.anySet(), Mockito.anyInt(), Mockito.anyLong(),
         Mockito.anyLong()))
         .thenAnswer(invocation -> {
           List<DatanodeDetails> dns = new ArrayList<>();
-          for (int i = 0; i < (int) invocation.getArguments()[2]; i++) {
+          for (int i = 0; i < (int) invocation.getArguments()[3]; i++) {
             dns.add(MockDatanodeDetails.randomDatanodeDetails());
           }
           return dns;
@@ -195,12 +196,12 @@ public class TestECPipelineProvider {
     List<DatanodeDetails> favoredNodes = new ArrayList<>();
     favoredNodes.add(MockDatanodeDetails.randomDatanodeDetails());
 
-    Pipeline pipeline = provider.create(ecConf, excludedNodes, favoredNodes);
+    Pipeline pipeline = provider.create(ecConf, excludedNodes, favoredNodes, Collections.emptySet());
     Assertions.assertEquals(EC, pipeline.getType());
     Assertions.assertEquals(ecConf.getData() + ecConf.getParity(),
         pipeline.getNodes().size());
 
-    verify(placementPolicy).chooseDatanodes(excludedNodes, favoredNodes,
+    verify(placementPolicy).chooseDatanodes(excludedNodes, favoredNodes, Collections.emptySet(),
         ecConf.getRequiredNodes(), 0, containerSizeBytes);
   }
 

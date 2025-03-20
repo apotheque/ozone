@@ -20,6 +20,7 @@ package org.apache.hadoop.hdds.scm.pipeline;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -206,6 +207,7 @@ public class TestPipelinePlacementPolicy {
     List<DatanodeDetails> results = localPlacementPolicy.chooseDatanodes(
         new ArrayList<>(datanodes.size()),
         new ArrayList<>(datanodes.size()),
+        Collections.emptySet(),
         nodesRequired, 0, 0);
 
     Assertions.assertEquals(nodesRequired, results.size());
@@ -246,7 +248,7 @@ public class TestPipelinePlacementPolicy {
     try {
       // A huge container size
       localPlacementPolicy.chooseDatanodes(new ArrayList<>(datanodes.size()),
-          new ArrayList<>(datanodes.size()), nodesRequired,
+          new ArrayList<>(datanodes.size()), Collections.emptySet(), nodesRequired,
           0, 10 * OzoneConsts.TB);
       Assertions.fail("SCMException should have been thrown.");
     } catch (SCMException ex) {
@@ -256,7 +258,7 @@ public class TestPipelinePlacementPolicy {
     try {
       // a huge free space min configured
       localPlacementPolicy.chooseDatanodes(new ArrayList<>(datanodes.size()),
-          new ArrayList<>(datanodes.size()), nodesRequired, 10 * OzoneConsts.TB,
+          new ArrayList<>(datanodes.size()), Collections.emptySet(), nodesRequired, 10 * OzoneConsts.TB,
           0);
       Assertions.fail("SCMException should have been thrown.");
     } catch (SCMException ex) {
@@ -274,7 +276,7 @@ public class TestPipelinePlacementPolicy {
     for (int i = 0; i < maxPipelineCount; i++) {
       try {
         List<DatanodeDetails> nodes = placementPolicy.chooseDatanodes(null,
-            null, HddsProtos.ReplicationFactor.THREE.getNumber(), 0, 0);
+            null, Collections.emptySet(), HddsProtos.ReplicationFactor.THREE.getNumber(), 0, 0);
 
         Pipeline pipeline = Pipeline.newBuilder()
             .setId(PipelineID.randomId())
@@ -435,6 +437,7 @@ public class TestPipelinePlacementPolicy {
     List<DatanodeDetails> pickedNodes1 = placementPolicy.chooseDatanodes(
         new ArrayList<>(PIPELINE_PLACEMENT_MAX_NODES_COUNT),
         new ArrayList<>(PIPELINE_PLACEMENT_MAX_NODES_COUNT),
+        Collections.emptySet(),
         nodesRequired, 0, 0);
     // modify node to pipeline mapping.
     insertHeavyNodesIntoNodeManager(healthyNodes, minorityHeavy);
@@ -451,6 +454,7 @@ public class TestPipelinePlacementPolicy {
         placementPolicy.chooseDatanodes(
             new ArrayList<>(PIPELINE_PLACEMENT_MAX_NODES_COUNT),
             new ArrayList<>(PIPELINE_PLACEMENT_MAX_NODES_COUNT),
+            Collections.emptySet(),
             nodesRequired, 0, 0));
   }
 
@@ -468,6 +472,7 @@ public class TestPipelinePlacementPolicy {
         placementPolicy.chooseDatanodes(
             new ArrayList<>(PIPELINE_PLACEMENT_MAX_NODES_COUNT),
             new ArrayList<>(PIPELINE_PLACEMENT_MAX_NODES_COUNT),
+            Collections.emptySet(),
             nodesRequired, 0, 0));
   }
 
@@ -560,7 +565,7 @@ public class TestPipelinePlacementPolicy {
 
     // As there is only 1 rack alive, the 3 DNs on /rack2 should be returned
     List<DatanodeDetails> pickedDns =  placementPolicy.chooseDatanodes(
-        new ArrayList<>(), new ArrayList<>(), nodesRequired, 0, 0);
+        new ArrayList<>(), new ArrayList<>(), Collections.emptySet(), nodesRequired, 0, 0);
 
     Assertions.assertEquals(3, pickedDns.size());
     Assertions.assertTrue(pickedDns.contains(dns.get(1)));
@@ -581,7 +586,7 @@ public class TestPipelinePlacementPolicy {
 
     Throwable t = Assertions.assertThrows(SCMException.class, () ->
         placementPolicy.chooseDatanodes(
-            new ArrayList<>(), new ArrayList<>(), nodesRequired, 0, 0));
+            new ArrayList<>(), new ArrayList<>(), Collections.emptySet(), nodesRequired, 0, 0));
     Assertions.assertEquals(PipelinePlacementPolicy.MULTIPLE_RACK_PIPELINE_MSG,
         t.getMessage());
   }
@@ -601,7 +606,7 @@ public class TestPipelinePlacementPolicy {
     excluded.add(dns.get(0));
     Throwable t = Assertions.assertThrows(SCMException.class, () ->
         placementPolicy.chooseDatanodes(
-            excluded, new ArrayList<>(), nodesRequired, 0, 0));
+            excluded, new ArrayList<>(), Collections.emptySet(), nodesRequired, 0, 0));
     Assertions.assertEquals(PipelinePlacementPolicy.MULTIPLE_RACK_PIPELINE_MSG,
         t.getMessage());
   }

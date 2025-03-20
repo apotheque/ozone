@@ -250,7 +250,8 @@ public class ContainerManagerImpl implements ContainerManager {
         .setOwner(owner)
         .setContainerID(containerID.getId())
         .setDeleteTransactionId(0)
-        .setReplicationType(pipeline.getType());
+        .setReplicationType(pipeline.getType())
+        .addAllDatacenters(pipeline.getDatacenters());
 
     if (pipeline.getReplicationConfig() instanceof ECReplicationConfig) {
       containerInfoBuilder.setEcReplicationConfig(
@@ -340,10 +341,10 @@ public class ContainerManagerImpl implements ContainerManager {
     ContainerInfo containerInfo;
     try {
       synchronized (pipeline.getId()) {
-        containerIDs = getContainersForOwner(pipeline, owner);
+        containerIDs = getContainersForOwnerAndDcs(pipeline, owner);
         if (containerIDs.size() < getOpenContainerCountPerPipeline(pipeline)) {
           allocateContainer(pipeline, owner);
-          containerIDs = getContainersForOwner(pipeline, owner);
+          containerIDs = getContainersForOwnerAndDcs(pipeline, owner);
         }
         containerIDs.removeAll(excludedContainerIDs);
         containerInfo = containerStateManager.getMatchingContainer(
@@ -368,12 +369,12 @@ public class ContainerManagerImpl implements ContainerManager {
   }
 
   /**
-   * Returns the container ID's matching with specified owner.
+   * Returns the container ID's matching with specified owner and allowed datacenters.
    * @param pipeline
    * @param owner
    * @return NavigableSet<ContainerID>
    */
-  private NavigableSet<ContainerID> getContainersForOwner(
+  private NavigableSet<ContainerID> getContainersForOwnerAndDcs(
       Pipeline pipeline, String owner) throws IOException {
     NavigableSet<ContainerID> containerIDs =
         pipelineManager.getContainersInPipeline(pipeline.getId());
@@ -381,7 +382,9 @@ public class ContainerManagerImpl implements ContainerManager {
     while (containerIDIterator.hasNext()) {
       ContainerID cid = containerIDIterator.next();
       try {
-        if (!getContainer(cid).getOwner().equals(owner)) {
+        ContainerInfo containerInfo = getContainer(cid);
+        if (!containerInfo.getOwner().equals(owner) ||
+            !containerInfo.getDatacenters().equals(pipeline.getDatacenters())) {
           containerIDIterator.remove();
         }
       } catch (ContainerNotFoundException e) {

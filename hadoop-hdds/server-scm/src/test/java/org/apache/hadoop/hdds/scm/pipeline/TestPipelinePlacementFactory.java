@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.io.File;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.hadoop.hdds.HddsConfigKeys;
@@ -174,7 +175,7 @@ public class TestPipelinePlacementFactory {
 
     int nodeNum = 3;
     List<DatanodeDetails> datanodeDetails =
-        policy.chooseDatanodes(null, null, nodeNum, 15, 15);
+        policy.chooseDatanodes(null, null, Collections.emptySet(), nodeNum, 15, 15);
     Assertions.assertEquals(nodeNum, datanodeDetails.size());
     Assertions.assertTrue(cluster.isSameParent(datanodeDetails.get(0),
         datanodeDetails.get(2)));
@@ -199,7 +200,7 @@ public class TestPipelinePlacementFactory {
     List<DatanodeDetails> excludedNodes = new ArrayList<>();
     List<DatanodeDetails> favoredNodes = new ArrayList<>();
     List<DatanodeDetails> datanodeDetails =
-        policy.chooseDatanodes(excludedNodes, excludedNodes, favoredNodes,
+        policy.chooseDatanodes(excludedNodes, excludedNodes, favoredNodes, Collections.emptySet(),
             nodeNum, 15, 15);
     Assertions.assertEquals(nodeNum, datanodeDetails.size());
     Assertions.assertFalse(cluster.isSameParent(datanodeDetails.get(0),
@@ -224,7 +225,7 @@ public class TestPipelinePlacementFactory {
 
     int nodeNum = 3;
     List<DatanodeDetails> datanodeDetails =
-        policy.chooseDatanodes(null, null, nodeNum, 15, 15);
+        policy.chooseDatanodes(null, null, Collections.emptySet(), nodeNum, 15, 15);
     Assertions.assertEquals(nodeNum, datanodeDetails.size());
 
     // First anchor will be Node0, Since there is no more node available
@@ -252,7 +253,7 @@ public class TestPipelinePlacementFactory {
     usedNodes.add(datanodes.get(0));
     int nodeNum = 2;
     List<DatanodeDetails> datanodeDetails =
-        policy.chooseDatanodes(usedNodes, null, null, nodeNum, 15, 15);
+        policy.chooseDatanodes(usedNodes, null, null, Collections.emptySet(), nodeNum, 15, 15);
     Assertions.assertEquals(nodeNum, datanodeDetails.size());
 
     Assertions.assertTrue(cluster.isSameParent(usedNodes.get(0),
@@ -266,7 +267,7 @@ public class TestPipelinePlacementFactory {
 
     nodeNum = 1;
     datanodeDetails =
-        policy.chooseDatanodes(usedNodes, null, null, nodeNum, 15, 15);
+        policy.chooseDatanodes(usedNodes, null, null, Collections.emptySet(), nodeNum, 15, 15);
     Assertions.assertEquals(nodeNum, datanodeDetails.size());
     // Node return by policy should have different parent as node0 and node1
     Assertions.assertFalse(cluster.isSameParent(usedNodes.get(0),
@@ -280,7 +281,7 @@ public class TestPipelinePlacementFactory {
 
     nodeNum = 1;
     datanodeDetails =
-        policy.chooseDatanodes(usedNodes, null, null, nodeNum, 15, 15);
+        policy.chooseDatanodes(usedNodes, null, null, Collections.emptySet(), nodeNum, 15, 15);
     Assertions.assertEquals(nodeNum, datanodeDetails.size());
     // Node return by policy should have same parent as node0 or node3
     Assertions.assertTrue(cluster.isSameParent(usedNodes.get(0),
@@ -291,7 +292,7 @@ public class TestPipelinePlacementFactory {
     usedNodes.clear();
     nodeNum = 3;
     datanodeDetails =
-        policy.chooseDatanodes(usedNodes, null, null, nodeNum, 15, 15);
+        policy.chooseDatanodes(usedNodes, null, null, Collections.emptySet(), nodeNum, 15, 15);
     Assertions.assertEquals(nodeNum, datanodeDetails.size());
   }
 
@@ -312,7 +313,7 @@ public class TestPipelinePlacementFactory {
     excludeNodes.add(datanodes.get(3));
     int nodeNum = 2;
     List<DatanodeDetails> datanodeDetails =
-        policy.chooseDatanodes(usedNodes, excludeNodes, null, nodeNum, 15, 15);
+        policy.chooseDatanodes(usedNodes, excludeNodes, null, Collections.emptySet(), nodeNum, 15, 15);
     Assertions.assertEquals(nodeNum, datanodeDetails.size());
     // policy should not return any of excluded node
     Assertions.assertNotSame(datanodeDetails.get(0).getUuid(),
@@ -336,7 +337,7 @@ public class TestPipelinePlacementFactory {
     excludeNodes.add(datanodes.get(2));
     nodeNum = 1;
     datanodeDetails =
-        policy.chooseDatanodes(usedNodes, excludeNodes, null, nodeNum, 15, 15);
+        policy.chooseDatanodes(usedNodes, excludeNodes, null, Collections.emptySet(), nodeNum, 15, 15);
     Assertions.assertEquals(nodeNum, datanodeDetails.size());
     // policy should not return any of excluded node
     Assertions.assertNotSame(datanodeDetails.get(0).getUuid(),

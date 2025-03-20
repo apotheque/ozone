@@ -21,7 +21,9 @@ import org.apache.hadoop.hdds.scm.PipelineChoosePolicy;
 import org.apache.hadoop.hdds.scm.PipelineRequestInformation;
 import org.apache.hadoop.hdds.scm.pipeline.Pipeline;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Random choose policy that randomly chooses pipeline.
@@ -34,7 +36,11 @@ public class RandomPipelineChoosePolicy implements PipelineChoosePolicy {
   @SuppressWarnings("java:S2245") // no need for secure random
   public Pipeline choosePipeline(List<Pipeline> pipelineList,
       PipelineRequestInformation pri) {
-    return pipelineList.get(choosePipelineIndex(pipelineList, pri));
+    int pipelineIndex = choosePipelineIndex(pipelineList, pri);
+    if (pipelineIndex == -1) {
+      return null;
+    }
+    return pipelineList.get(pipelineIndex);
   }
 
   /**
@@ -45,8 +51,20 @@ public class RandomPipelineChoosePolicy implements PipelineChoosePolicy {
    *         could be selected.
    */
   @Override
-  public int choosePipelineIndex(List<Pipeline> pipelineList,
-      PipelineRequestInformation pri) {
-    return (int) (Math.random() * pipelineList.size());
+  public int choosePipelineIndex(List<Pipeline> pipelineList, PipelineRequestInformation pri) {
+    Set<String> requestedDatacenters = pri.getDatacenters();
+
+    List<Integer> matchingIndices = new ArrayList<>();
+    for (int i = 0; i < pipelineList.size(); i++) {
+      if (pipelineList.get(i).getDatacenters().equals(requestedDatacenters)) {
+        matchingIndices.add(i);
+      }
+    }
+
+    if (matchingIndices.isEmpty()) {
+      return -1;
+    }
+
+    return matchingIndices.get((int) (Math.random() * matchingIndices.size()));
   }
 }

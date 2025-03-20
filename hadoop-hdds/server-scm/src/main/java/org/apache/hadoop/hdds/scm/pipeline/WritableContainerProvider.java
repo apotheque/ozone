@@ -23,6 +23,7 @@ import org.apache.hadoop.hdds.scm.container.ContainerInfo;
 import org.apache.hadoop.hdds.scm.container.common.helpers.ExcludeList;
 
 import java.io.IOException;
+import java.util.Set;
 
 /**
  * Interface used by the WritableContainerFactory to obtain a writable container
@@ -52,7 +53,7 @@ public interface WritableContainerProvider<T extends ReplicationConfig> {
    * @throws IOException
    */
   ContainerInfo getContainer(long size, T repConfig,
-      String owner, ExcludeList excludeList)
+      String owner, ExcludeList excludeList, Set<String> datacenters)
       throws IOException;
 
 }

@@ -27,6 +27,7 @@ import org.apache.hadoop.hdds.conf.ConfigurationSource;
 import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
 import org.apache.hadoop.hdds.protocol.proto.HddsProtos.ReplicationFactor;
 import org.apache.hadoop.hdds.scm.ScmConfigKeys;
+import org.apache.hadoop.hdds.scm.ScmUtils;
 import org.apache.hadoop.hdds.scm.ha.SCMContext;
 import org.apache.hadoop.hdds.scm.ha.SCMService;
 import org.apache.hadoop.ozone.OzoneConfigKeys;
@@ -36,7 +37,10 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
@@ -88,6 +92,7 @@ public class BackgroundPipelineCreator implements SCMService {
   private final AtomicBoolean running = new AtomicBoolean(false);
   private final long intervalInMillis;
   private final Clock clock;
+  private final Set<String> datacenters;
 
 
   BackgroundPipelineCreator(PipelineManager pipelineManager,
@@ -96,6 +101,7 @@ public class BackgroundPipelineCreator implements SCMService {
     this.conf = conf;
     this.scmContext = scmContext;
     this.clock = clock;
+    this.datacenters = new HashSet<>(ScmUtils.getDcMapping(conf).values());
 
     this.createPipelineInSafeMode = conf.getBoolean(
         HddsConfigKeys.HDDS_SCM_SAFEMODE_PIPELINE_CREATION,
@@ -232,7 +238,8 @@ public class BackgroundPipelineCreator implements SCMService {
           (ReplicationConfig) it.next();
 
       try {
-        Pipeline pipeline = pipelineManager.createPipeline(replicationConfig);
+        Pipeline pipeline = pipelineManager.createPipeline(replicationConfig, Collections.emptyList(),
+                Collections.emptyList(), datacenters);
         LOG.info("Created new pipeline {}", pipeline);
       } catch (IOException ioe) {
         it.remove();

@@ -64,12 +64,12 @@ public class MockPipelineManager implements PipelineManager {
   public Pipeline createPipeline(ReplicationConfig replicationConfig)
       throws IOException {
     return createPipeline(replicationConfig, Collections.emptyList(),
-        Collections.emptyList());
+        Collections.emptyList(), Collections.emptySet());
   }
 
   @Override
   public Pipeline createPipeline(ReplicationConfig replicationConfig,
-      List<DatanodeDetails> excludedNodes, List<DatanodeDetails> favoredNodes)
+      List<DatanodeDetails> excludedNodes, List<DatanodeDetails> favoredNodes, Set<String> datacenters)
       throws IOException {
     Pipeline pipeline;
     if (replicationConfig.getReplicationType()

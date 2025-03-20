@@ -99,6 +99,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -509,7 +510,7 @@ public class TestReplicationManager {
     assertEquals(1, repQueue.underReplicatedQueueSize());
     assertEquals(0, repQueue.overReplicatedQueueSize());
 
-    when(ratisPlacementPolicy.chooseDatanodes(anyList(), anyList(), eq(null), eq(1), anyLong(),
+    when(ratisPlacementPolicy.chooseDatanodes(anyList(), anyList(), eq(null), anySet(), eq(1), anyLong(),
         anyLong())).thenAnswer(invocation -> ImmutableList.of(MockDatanodeDetails.randomDatanodeDetails()));
     when(nodeManager.getTotalDatanodeCommandCounts(any(DatanodeDetails.class), any(), any()))
         .thenAnswer(invocation -> {
@@ -569,7 +570,7 @@ public class TestReplicationManager {
     assertEquals(0, repQueue.overReplicatedQueueSize());
 
     // next, this test sets up some mocks to test if RatisUnderReplicationHandler will handle this container correctly
-    when(ratisPlacementPolicy.chooseDatanodes(anyList(), anyList(), eq(null), eq(1), anyLong(),
+    when(ratisPlacementPolicy.chooseDatanodes(anyList(), anyList(), eq(null), anySet(), eq(1), anyLong(),
         anyLong())).thenAnswer(invocation -> ImmutableList.of(MockDatanodeDetails.randomDatanodeDetails()));
     when(nodeManager.getTotalDatanodeCommandCounts(any(DatanodeDetails.class), any(), any()))
         .thenAnswer(invocation -> {

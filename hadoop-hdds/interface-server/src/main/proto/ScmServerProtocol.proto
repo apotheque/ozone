@@ -137,6 +137,7 @@ enum Status {
   CA_ROTATION_IN_POST_PROGRESS = 44;
   CONTAINER_ALREADY_CLOSED = 45;
   CONTAINER_ALREADY_CLOSING = 46;
+  FAILED_TO_FIND_ENOUGH_NODES_WITHIN_DATACENTER=47;
 }
 
 /**
@@ -154,6 +155,7 @@ message AllocateScmBlockRequestProto {
   optional hadoop.hdds.ECReplicationConfig ecReplicationConfig = 8;
 
   optional string client = 9;
+  repeated string datacenters = 10;
 
 }
 

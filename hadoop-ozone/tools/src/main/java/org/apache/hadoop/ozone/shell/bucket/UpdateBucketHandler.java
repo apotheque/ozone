@@ -17,11 +17,11 @@
  */
 package org.apache.hadoop.ozone.shell.bucket;
 
+import org.apache.hadoop.ozone.OzoneConsts;
 import org.apache.hadoop.ozone.client.OzoneBucket;
 import org.apache.hadoop.ozone.client.OzoneClient;
 import org.apache.hadoop.ozone.client.OzoneClientException;
 import org.apache.hadoop.ozone.shell.OzoneAddress;
-
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
@@ -38,6 +38,11 @@ public class UpdateBucketHandler extends BucketHandler {
       description = "Owner of the bucket to set")
   private String ownerName;
 
+  @Option(names = {"--datacenters", "-dc"},
+      description = "Comma-separated list of datacenters to store the bucket in")
+  private String datacenters;
+
+
   @Override
   protected void execute(OzoneClient client, OzoneAddress address)
       throws IOException, OzoneClientException {
@@ -53,6 +58,13 @@ public class UpdateBucketHandler extends BucketHandler {
         out().format("Bucket '%s' owner is already '%s'. Unchanged.%n",
             volumeName + "/" + bucketName, ownerName);
       }
+    }
+
+    if (datacenters != null && !datacenters.isEmpty()) {
+      if (!datacenters.matches("^\\w+(,\\w+)*$")) {
+        throw new IllegalArgumentException("Invalid datacenters format. Expected a comma separated string.");
+      }
+      bucket.getMetadata().put(OzoneConsts.DATACENTERS, datacenters);
     }
 
     OzoneBucket updatedBucket = client.getObjectStore().getVolume(volumeName)

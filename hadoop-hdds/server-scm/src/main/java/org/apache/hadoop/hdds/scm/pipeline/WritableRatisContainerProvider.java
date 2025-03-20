@@ -34,7 +34,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -64,7 +66,7 @@ public class WritableRatisContainerProvider
 
   @Override
   public ContainerInfo getContainer(final long size,
-      ReplicationConfig repConfig, String owner, ExcludeList excludeList)
+      ReplicationConfig repConfig, String owner, ExcludeList excludeList, Set<String> datacenters)
       throws IOException {
     /*
       Here is the high level logic.
@@ -84,12 +86,10 @@ public class WritableRatisContainerProvider
 
     //TODO we need to continue the refactor to use repConfig everywhere
     //in downstream managers.
+    PipelineRequestInformation req = PipelineRequestInformation.Builder.getBuilder()
+        .setSize(size).setDatacenters(datacenters).build();
 
-    PipelineRequestInformation req =
-        PipelineRequestInformation.Builder.getBuilder().setSize(size).build();
-
-    ContainerInfo containerInfo =
-        getContainer(repConfig, owner, excludeList, req);
+    ContainerInfo containerInfo = getContainer(repConfig, owner, excludeList, req);
     if (containerInfo != null) {
       return containerInfo;
     }
@@ -97,7 +97,9 @@ public class WritableRatisContainerProvider
     try {
       // TODO: #CLUTIL Remove creation logic when all replication types
       //  and factors are handled by pipeline creator
-      Pipeline pipeline = pipelineManager.createPipeline(repConfig);
+      // TODO: why is pipeline created without accounting for excludeList???
+      Pipeline pipeline = pipelineManager.createPipeline(repConfig, Collections.emptyList(),
+          Collections.emptyList(), datacenters);
 
       // wait until pipeline is ready
       pipelineManager.waitPipelineReady(pipeline.getId(), 0);
@@ -189,6 +191,12 @@ public class WritableRatisContainerProvider
       Pipeline pipeline = pipelineChoosePolicy.choosePipeline(
           availablePipelines, req);
 
+      // no suitable pipeline
+      if (pipeline == null) {
+        availablePipelines.clear();
+        break;
+      }
+
       // look for OPEN containers that match the criteria.
       final ContainerInfo containerInfo = containerManager.getMatchingContainer(
           req.getSize(), owner, pipeline, excludeList.getContainerIds());
@@ -202,5 +210,4 @@ public class WritableRatisContainerProvider
 
     return null;
   }
-
 }

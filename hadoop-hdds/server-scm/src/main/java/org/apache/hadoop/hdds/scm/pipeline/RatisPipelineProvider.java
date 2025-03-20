@@ -142,12 +142,12 @@ public class RatisPipelineProvider
   public synchronized Pipeline create(RatisReplicationConfig replicationConfig)
       throws IOException {
     return create(replicationConfig, Collections.emptyList(),
-        Collections.emptyList());
+        Collections.emptyList(), Collections.emptySet());
   }
 
   @Override
   public synchronized Pipeline create(RatisReplicationConfig replicationConfig,
-      List<DatanodeDetails> excludedNodes, List<DatanodeDetails> favoredNodes)
+      List<DatanodeDetails> excludedNodes, List<DatanodeDetails> favoredNodes, Set<String> datacenters)
       throws IOException {
     if (exceedPipelineNumberLimit(replicationConfig)) {
       throw new SCMException("Ratis pipeline number meets the limit: " +
@@ -162,6 +162,9 @@ public class RatisPipelineProvider
         replicationConfig.getReplicationFactor();
     switch (factor) {
     case ONE:
+      if (!datacenters.isEmpty()) {
+        throw new IllegalStateException("Datacenter locality is not supported for replication factor " + factor.name());
+      }
       dns = pickNodesNotUsed(replicationConfig, minRatisVolumeSizeBytes,
           containerSizeBytes, conf);
       break;
@@ -175,7 +178,7 @@ public class RatisPipelineProvider
         }
       }
       dns = placementPolicy.chooseDatanodes(excludedNodes,
-          favoredNodes, factor.getNumber(), minRatisVolumeSizeBytes,
+          favoredNodes, datacenters, factor.getNumber(), minRatisVolumeSizeBytes,
           containerSizeBytes);
       break;
     default:
@@ -191,6 +194,7 @@ public class RatisPipelineProvider
         .setNodes(dns)
         .setSuggestedLeaderId(
             suggestedLeader != null ? suggestedLeader.getUuid() : null)
+        .setDatacenters(datacenters)
         .build();
 
     // Send command to datanodes to create pipeline

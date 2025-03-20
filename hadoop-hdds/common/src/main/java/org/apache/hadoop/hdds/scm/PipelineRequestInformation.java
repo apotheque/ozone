@@ -18,17 +18,23 @@
 
 package org.apache.hadoop.hdds.scm;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * The information of the request of pipeline.
  */
 public final class PipelineRequestInformation {
   private final long size;
+  private final Set<String> datacenters;
 
   /**
    * Builder for PipelineRequestInformation.
    */
   public static class Builder {
     private long size;
+    private Set<String> datacenters = Collections.emptySet();
 
     public static Builder getBuilder() {
       return new Builder();
@@ -44,16 +50,31 @@ public final class PipelineRequestInformation {
       return this;
     }
 
+    /**
+     * sets the datacenters.
+     * @param datacenters request datacenters
+     * @return Builder for PipelineRequestInformation
+     */
+    public Builder setDatacenters(Set<String> datacenters) {
+      this.datacenters = new HashSet<>(datacenters);
+      return this;
+    }
+
     public PipelineRequestInformation build() {
-      return new PipelineRequestInformation(size);
+      return new PipelineRequestInformation(size, datacenters);
     }
   }
 
-  private PipelineRequestInformation(long size) {
+  private PipelineRequestInformation(long size, Set<String> datacenters) {
     this.size = size;
+    this.datacenters = datacenters;
   }
 
   public long getSize() {
     return size;
+  }
+
+  public Set<String> getDatacenters() {
+    return datacenters;
   }
 }

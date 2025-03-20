@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 
 import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.LifeCycleState.CLOSING;
 import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.LifeCycleState.OPEN;
@@ -116,6 +117,7 @@ public class TestContainerInfo {
         .setContainerID(1234)
         .setPipelineID(PipelineID.randomId())
         .setState(OPEN)
-        .setOwner("scm");
+        .setOwner("scm")
+        .setDatacenters(Collections.emptySet());
   }
 }

@@ -59,6 +59,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
 
 /**
@@ -201,7 +202,7 @@ public abstract class TestMisReplicationHandler {
                     .collect(Collectors.toList());
     if (expectedNumberOfNodes > 0) {
       Mockito.when(mockedPlacementPolicy.chooseDatanodes(
-                      any(), any(), any(),
+                      any(), any(), any(), anySet(),
                       eq(copy.size()), Mockito.anyLong(), Mockito.anyLong()))
               .thenAnswer(invocation -> {
                 List<DatanodeDetails> datanodeDetails =
