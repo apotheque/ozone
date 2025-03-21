@@ -22,8 +22,8 @@ declare -i OZONE_DATANODES OZONE_REPLICATION_FACTOR OZONE_SAFEMODE_MIN_DATANODES
 ORIG_DATANODES="${OZONE_DATANODES:-}"
 ORIG_REPLICATION_FACTOR="${OZONE_REPLICATION_FACTOR:-}"
 
-# only support replication factor of 1 or 3
-if [[ -v OZONE_REPLICATION_FACTOR ]] && [[ ${OZONE_REPLICATION_FACTOR} -ne 1 ]] && [[ ${OZONE_REPLICATION_FACTOR} -ne 3 ]]; then
+# only support replication factor of 1 or 3 or 6
+if [[ -v OZONE_REPLICATION_FACTOR ]] && [[ ${OZONE_REPLICATION_FACTOR} -ne 1 ]] && [[ ${OZONE_REPLICATION_FACTOR} -ne 3 ]] && [[ ${OZONE_REPLICATION_FACTOR} -ne 6 ]]; then
   # assume invalid replication factor was intended as "number of datanodes"
   if [[ -z ${ORIG_DATANODES} ]]; then
     OZONE_DATANODES=${OZONE_REPLICATION_FACTOR}

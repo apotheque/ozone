@@ -291,6 +291,7 @@ enum ReplicationType {
 enum ReplicationFactor {
     ONE = 1;
     THREE = 3;
+    SIX = 6;
     ZERO = 0; // Invalid Factor
 }
 

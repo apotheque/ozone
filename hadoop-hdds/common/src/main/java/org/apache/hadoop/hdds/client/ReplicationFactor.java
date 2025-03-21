@@ -25,7 +25,8 @@ import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
  */
 public enum ReplicationFactor {
   ONE(1),
-  THREE(3);
+  THREE(3),
+  SIX(6);
 
   /**
    * Integer representation of replication.
@@ -52,6 +53,9 @@ public enum ReplicationFactor {
     if (value == 3) {
       return THREE;
     }
+    if (value == 6) {
+      return SIX;
+    }
     throw new IllegalArgumentException("Unsupported value: " + value);
   }
 
@@ -65,6 +69,8 @@ public enum ReplicationFactor {
       return ReplicationFactor.ONE;
     case THREE:
       return ReplicationFactor.THREE;
+    case SIX:
+      return ReplicationFactor.SIX;
     default:
       throw new IllegalArgumentException(
           "Unsupported ProtoBuf replication factor: " + replicationFactor);
@@ -85,6 +91,8 @@ public enum ReplicationFactor {
       return HddsProtos.ReplicationFactor.ONE;
     case THREE:
       return HddsProtos.ReplicationFactor.THREE;
+    case SIX:
+      return HddsProtos.ReplicationFactor.SIX;
     default:
       throw new IllegalArgumentException(
           "Unsupported ProtoBuf replication factor: " + this);

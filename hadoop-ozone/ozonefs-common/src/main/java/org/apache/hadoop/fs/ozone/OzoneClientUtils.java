@@ -137,8 +137,10 @@ public final class OzoneClientUtils {
     } else {
       // Let's validate the client side available replication configs.
       boolean isReplicationInSupportedList =
-          (replication == ReplicationFactor.ONE
-              .getValue() || replication == ReplicationFactor.THREE.getValue());
+          replication == ReplicationFactor.ONE.getValue()
+              || replication == ReplicationFactor.THREE.getValue()
+              || replication == ReplicationFactor.SIX.getValue();
+
       if (isReplicationInSupportedList) {
         if (clientConfiguredReplConfig != null) {
           // Uses the replication(short value) passed from file system API and
