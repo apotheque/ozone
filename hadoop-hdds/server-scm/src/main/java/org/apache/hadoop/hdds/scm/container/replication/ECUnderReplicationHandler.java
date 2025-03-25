@@ -411,7 +411,7 @@ public class ECUnderReplicationHandler implements UnhealthyReplicationHandler {
   ) throws SCMException {
     return ReplicationManagerUtil.getTargetDatanodes(
         containerPlacement, requiredNodes,
-        usedNodes, excludedNodes,
+        usedNodes, excludedNodes, Collections.emptySet(),
         currentContainerSize, container);
   }
 

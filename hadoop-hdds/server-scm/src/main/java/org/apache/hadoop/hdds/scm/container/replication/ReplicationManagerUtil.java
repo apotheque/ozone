@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -74,7 +73,7 @@ public final class ReplicationManagerUtil {
    */
   public static List<DatanodeDetails> getTargetDatanodes(PlacementPolicy policy,
       int requiredNodes, List<DatanodeDetails> usedNodes,
-      List<DatanodeDetails> excludedNodes, long defaultContainerSize,
+      List<DatanodeDetails> excludedNodes, Set<String> datacenters, long defaultContainerSize,
       ContainerInfo container) throws SCMException {
 
     // Ensure that target datanodes have enough space to hold a complete
@@ -86,10 +85,10 @@ public final class ReplicationManagerUtil {
     while (mutableRequiredNodes > 0) {
       try {
         if (usedNodes == null) {
-          return policy.chooseDatanodes(excludedNodes, null, Collections.emptySet(),
+          return policy.chooseDatanodes(excludedNodes, null, datacenters,
               mutableRequiredNodes, 0, dataSizeRequired);
         } else {
-          return policy.chooseDatanodes(usedNodes, excludedNodes, null, Collections.emptySet(),
+          return policy.chooseDatanodes(usedNodes, excludedNodes, null, datacenters,
               mutableRequiredNodes, 0, dataSizeRequired);
         }
       } catch (IOException e) {

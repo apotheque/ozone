@@ -157,7 +157,7 @@ public abstract class MisReplicationHandler implements
     List<DatanodeDetails> targetDatanodes = ReplicationManagerUtil
         .getTargetDatanodes(containerPlacement, requiredNodes,
             excludedAndUsedNodes.getUsedNodes(),
-            excludedAndUsedNodes.getExcludedNodes(), currentContainerSize,
+            excludedAndUsedNodes.getExcludedNodes(), Collections.emptySet(), currentContainerSize,
             container);
     List<DatanodeDetails> availableSources = sources.stream()
         .map(ContainerReplica::getDatanodeDetails)

@@ -26,6 +26,7 @@ import org.apache.hadoop.hdds.protocol.proto.HddsProtos.LifeCycleState;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerDatanodeProtocolProtos.ContainerReplicaProto.State;
 import org.apache.hadoop.hdds.scm.PlacementPolicy;
 import org.apache.hadoop.hdds.scm.ScmConfigKeys;
+import org.apache.hadoop.hdds.scm.ScmUtils;
 import org.apache.hadoop.hdds.scm.container.ContainerInfo;
 import org.apache.hadoop.hdds.scm.container.ContainerReplica;
 import org.apache.hadoop.hdds.scm.exceptions.SCMException;
@@ -37,9 +38,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalLong;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -59,6 +62,7 @@ public class RatisUnderReplicationHandler
   private final long currentContainerSize;
   private final ReplicationManager replicationManager;
   private final ReplicationManagerMetrics metrics;
+  private final Map<String, String> dcMapping;
 
   public RatisUnderReplicationHandler(final PlacementPolicy placementPolicy,
       final ConfigurationSource conf,
@@ -69,6 +73,7 @@ public class RatisUnderReplicationHandler
             ScmConfigKeys.OZONE_SCM_CONTAINER_SIZE_DEFAULT, StorageUnit.BYTES);
     this.replicationManager = replicationManager;
     this.metrics = replicationManager.getMetrics();
+    this.dcMapping = ScmUtils.getDcMapping(conf);
   }
 
   /**
@@ -88,16 +93,45 @@ public class RatisUnderReplicationHandler
       Set<ContainerReplica> replicas, List<ContainerReplicaOp> pendingOps,
       ContainerHealthResult result, int minHealthyForMaintenance)
       throws IOException {
+    LOG.debug("Handling under replicated Ratis container {}", result.getContainerInfo());
+
+    if (result.getContainerInfo().getDatacenters().isEmpty()) {
+      return processAndSendCommandsInternal(replicas, pendingOps, result, minHealthyForMaintenance);
+    } else {
+      Map<String, List<ContainerReplica>> replicasByDc = getReplicasByDc(replicas);
+      int commandsSent = 0;
+      for (Map.Entry<String, List<ContainerReplica>> entry: replicasByDc.entrySet()) {
+        Set<ContainerReplica> uniqueReplicas = new HashSet<>(entry.getValue());
+        commandsSent += processAndSendCommandsInternal(uniqueReplicas, pendingOps, result, minHealthyForMaintenance);
+      }
+      return commandsSent;
+    }
+  }
+
+  private int processAndSendCommandsInternal(
+          Set<ContainerReplica> replicas, List<ContainerReplicaOp> pendingOps,
+          ContainerHealthResult result, int minHealthyForMaintenance)
+          throws IOException {
     ContainerInfo containerInfo = result.getContainerInfo();
-    LOG.debug("Handling under replicated Ratis container {}", containerInfo);
+    RatisContainerReplicaCount withUnhealthy;
+    RatisContainerReplicaCount withoutUnhealthy;
 
-    RatisContainerReplicaCount withUnhealthy =
-        new RatisContainerReplicaCount(containerInfo, replicas, pendingOps,
-            minHealthyForMaintenance, true);
-
-    RatisContainerReplicaCount withoutUnhealthy =
-        new RatisContainerReplicaCount(containerInfo, replicas, pendingOps,
-            minHealthyForMaintenance, false);
+    if (containerInfo.getDatacenters().isEmpty()) {
+      withUnhealthy =
+          new RatisContainerReplicaCount(containerInfo, replicas, pendingOps,
+              minHealthyForMaintenance, true);
+      withoutUnhealthy =
+          new RatisContainerReplicaCount(containerInfo, replicas, pendingOps,
+              minHealthyForMaintenance, false);
+    } else {
+      int replicasPerDc = containerInfo.getReplicationFactor().getNumber() / containerInfo.getDatacenters().size();
+      withUnhealthy =
+          new RatisContainerReplicaCount(containerInfo, replicas, pendingOps, replicasPerDc,
+              minHealthyForMaintenance, true);
+      withoutUnhealthy =
+          new RatisContainerReplicaCount(containerInfo, replicas, pendingOps, replicasPerDc,
+              minHealthyForMaintenance, false);
+    }
 
     if (result instanceof ContainerHealthResult.UnderReplicatedHealthResult) {
       ContainerHealthResult.UnderReplicatedHealthResult
@@ -158,6 +192,16 @@ public class RatisUnderReplicationHandler
           replicaCount.additionalReplicaNeeded(), targetDatanodes.size());
     }
     return commandsSent;
+  }
+
+  private Map<String, List<ContainerReplica>> getReplicasByDc(
+      Collection<ContainerReplica> replicas) {
+    return replicas.stream()
+        .collect(Collectors.groupingBy(r -> {
+          DatanodeDetails node = r.getDatanodeDetails();
+          return dcMapping.get(node.getHostName() + ":" +
+              node.getPort(DatanodeDetails.Port.Name.RATIS).getValue());
+        }));
   }
 
   /**
@@ -231,9 +275,21 @@ public class RatisUnderReplicationHandler
     int numCommandsSent = 0;
     for (ContainerReplica replica : sources) {
       // find a target for each source and send replicate command
-      final List<DatanodeDetails> target =
-          ReplicationManagerUtil.getTargetDatanodes(placementPolicy, 1, excludedAndUsedNodes.getUsedNodes(),
-              excludedAndUsedNodes.getExcludedNodes(), currentContainerSize, container);
+      List<DatanodeDetails> target;
+      if (container.getDatacenters().isEmpty()) {
+        target = ReplicationManagerUtil.getTargetDatanodes(placementPolicy, 1,
+            excludedAndUsedNodes.getUsedNodes(), excludedAndUsedNodes.getExcludedNodes(), Collections.emptySet(),
+            currentContainerSize, container);
+      } else {
+        DatanodeDetails node = replica.getDatanodeDetails();
+        String dcName = dcMapping.get(node.getHostName() + ":" +
+            node.getPort(DatanodeDetails.Port.Name.RATIS).getValue());
+        target = ReplicationManagerUtil.getTargetDatanodes(placementPolicy, 1,
+            excludedAndUsedNodes.getUsedNodes(), excludedAndUsedNodes.getExcludedNodes(),
+            new HashSet<>(Collections.singleton(dcName)),
+            currentContainerSize, replicaCount.getContainer());
+      }
+
       int count = 0;
       try {
         count = sendReplicationCommands(container, ImmutableList.of(replica.getDatanodeDetails()), target);
@@ -454,9 +510,19 @@ public class RatisUnderReplicationHandler
     LOG.debug("UsedList: {}, size {}. ExcludeList: {}, size: {}. ",
         used, used.size(), excluded, excluded.size());
 
-    return ReplicationManagerUtil.getTargetDatanodes(placementPolicy,
-        replicaCount.additionalReplicaNeeded(), used, excluded,
-        currentContainerSize, replicaCount.getContainer());
+    ContainerInfo container = replicaCount.getContainer();
+    if (container.getDatacenters().isEmpty()) {
+      return ReplicationManagerUtil.getTargetDatanodes(placementPolicy,
+          replicaCount.additionalReplicaNeeded(), used, excluded, Collections.emptySet(),
+          currentContainerSize, replicaCount.getContainer());
+    } else {
+      DatanodeDetails node = replicaCount.getReplicas().get(0).getDatanodeDetails();
+      String dcName = dcMapping.get(node.getHostName() + ":" +
+          node.getPort(DatanodeDetails.Port.Name.RATIS).getValue());
+      return ReplicationManagerUtil.getTargetDatanodes(placementPolicy,
+          replicaCount.additionalReplicaNeeded(), used, excluded, new HashSet<>(Collections.singleton(dcName)),
+          currentContainerSize, replicaCount.getContainer());
+    }
   }
 
   private int sendReplicationCommands(
