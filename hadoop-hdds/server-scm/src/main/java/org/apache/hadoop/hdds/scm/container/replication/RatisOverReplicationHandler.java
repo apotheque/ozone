@@ -18,10 +18,12 @@
 
 package org.apache.hadoop.hdds.scm.container.replication;
 
+import org.apache.hadoop.hdds.conf.ConfigurationSource;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
 import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
 import org.apache.hadoop.hdds.scm.ContainerPlacementStatus;
 import org.apache.hadoop.hdds.scm.PlacementPolicy;
+import org.apache.hadoop.hdds.scm.ScmUtils;
 import org.apache.hadoop.hdds.scm.container.ContainerInfo;
 import org.apache.hadoop.hdds.scm.container.ContainerReplica;
 import org.apache.hadoop.hdds.scm.node.states.NodeNotFoundException;
@@ -35,6 +37,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -49,11 +52,14 @@ public class RatisOverReplicationHandler
       LoggerFactory.getLogger(RatisOverReplicationHandler.class);
 
   private final ReplicationManager replicationManager;
+  private final Map<String, String> dcMapping;
 
   public RatisOverReplicationHandler(PlacementPolicy placementPolicy,
-      ReplicationManager replicationManager) {
+                                     final ConfigurationSource conf,
+                                     ReplicationManager replicationManager) {
     super(placementPolicy);
     this.replicationManager = replicationManager;
+    this.dcMapping = ScmUtils.getDcMapping(conf);
   }
 
   /**
@@ -75,9 +81,26 @@ public class RatisOverReplicationHandler
       Set<ContainerReplica> replicas, List<ContainerReplicaOp> pendingOps,
       ContainerHealthResult result, int minHealthyForMaintenance) throws
       IOException {
-    ContainerInfo containerInfo = result.getContainerInfo();
-    LOG.debug("Handling container {}.", containerInfo);
+    LOG.debug("Handling container {}.", result.getContainerInfo());
 
+    if (result.getContainerInfo().getDatacenters().isEmpty()) {
+      return processAndSendCommandsInternal(replicas, pendingOps, result, minHealthyForMaintenance);
+    } else {
+      Map<String, List<ContainerReplica>> replicasByDc = getReplicasByDc(replicas);
+      int commandsSent = 0;
+      for (Map.Entry<String, List<ContainerReplica>> entry: replicasByDc.entrySet()) {
+        Set<ContainerReplica> uniqueReplicas = new HashSet<>(entry.getValue());
+        commandsSent += processAndSendCommandsInternal(uniqueReplicas, pendingOps, result, minHealthyForMaintenance);
+      }
+      return commandsSent;
+    }
+  }
+
+  public int processAndSendCommandsInternal(
+      Set<ContainerReplica> replicas, List<ContainerReplicaOp> pendingOps,
+      ContainerHealthResult result, int minHealthyForMaintenance) throws
+      IOException {
+    ContainerInfo containerInfo = result.getContainerInfo();
     // We are going to check for over replication, so we should filter out any
     // replicas that are not in a HEALTHY state. This is because a replica can
     // be healthy, stale or dead. If it is dead it will be quickly removed from
@@ -97,9 +120,15 @@ public class RatisOverReplicationHandler
         })
         .collect(Collectors.toSet());
 
-    RatisContainerReplicaCount replicaCount =
-        new RatisContainerReplicaCount(containerInfo, healthyReplicas,
-            pendingOps, minHealthyForMaintenance, true);
+    RatisContainerReplicaCount replicaCount;
+    if (containerInfo.getDatacenters().isEmpty()) {
+      replicaCount = new RatisContainerReplicaCount(containerInfo, healthyReplicas,
+          pendingOps, minHealthyForMaintenance, true);
+    } else {
+      int replicasPerDc = containerInfo.getReplicationFactor().getNumber() / containerInfo.getDatacenters().size();
+      replicaCount = new RatisContainerReplicaCount(containerInfo, healthyReplicas,
+          pendingOps, replicasPerDc, minHealthyForMaintenance, true);
+    }
 
     // verify that this container is actually over replicated
     if (!verifyOverReplication(replicaCount)) {
@@ -142,6 +171,16 @@ public class RatisOverReplicationHandler
       return false;
     }
     return true;
+  }
+
+  private Map<String, List<ContainerReplica>> getReplicasByDc(
+      Collection<ContainerReplica> replicas) {
+    return replicas.stream()
+        .collect(Collectors.groupingBy(r -> {
+          DatanodeDetails node = r.getDatanodeDetails();
+          return dcMapping.get(node.getHostName() + ":" +
+              node.getPort(DatanodeDetails.Port.Name.RATIS).getValue());
+        }));
   }
 
   /**

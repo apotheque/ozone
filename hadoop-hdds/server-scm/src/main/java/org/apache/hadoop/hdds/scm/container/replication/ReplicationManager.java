@@ -260,7 +260,7 @@ public class ReplicationManager implements SCMService, ContainerReplicaPendingOp
     ratisUnderReplicationHandler = new RatisUnderReplicationHandler(
         ratisContainerPlacement, conf, this);
     ratisOverReplicationHandler =
-        new RatisOverReplicationHandler(ratisContainerPlacement, this);
+        new RatisOverReplicationHandler(ratisContainerPlacement, conf, this);
     ratisMisReplicationHandler = new RatisMisReplicationHandler(
         ratisContainerPlacement, conf, this);
     underReplicatedProcessor =

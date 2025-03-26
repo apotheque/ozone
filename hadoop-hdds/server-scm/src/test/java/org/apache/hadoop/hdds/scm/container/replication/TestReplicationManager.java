@@ -389,7 +389,7 @@ public class TestReplicationManager {
     assertEquals(1, repQueue.overReplicatedQueueSize());
 
     RatisOverReplicationHandler handler = new RatisOverReplicationHandler(
-        ratisPlacementPolicy, replicationManager);
+        ratisPlacementPolicy, configuration, replicationManager);
 
     handler.processAndSendCommands(replicas, Collections.emptyList(),
             repQueue.dequeueOverReplicatedContainer(), 2);
