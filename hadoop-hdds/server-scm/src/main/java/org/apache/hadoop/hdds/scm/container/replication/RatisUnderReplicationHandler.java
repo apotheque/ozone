@@ -197,11 +197,7 @@ public class RatisUnderReplicationHandler
   private Map<String, List<ContainerReplica>> getReplicasByDc(
       Collection<ContainerReplica> replicas) {
     return replicas.stream()
-        .collect(Collectors.groupingBy(r -> {
-          DatanodeDetails node = r.getDatanodeDetails();
-          return dcMapping.get(node.getHostName() + ":" +
-              node.getPort(DatanodeDetails.Port.Name.RATIS).getValue());
-        }));
+        .collect(Collectors.groupingBy(r -> r.getDatanodeDetails().getDc(dcMapping)));
   }
 
   /**
@@ -282,11 +278,9 @@ public class RatisUnderReplicationHandler
             currentContainerSize, container);
       } else {
         DatanodeDetails node = replica.getDatanodeDetails();
-        String dcName = dcMapping.get(node.getHostName() + ":" +
-            node.getPort(DatanodeDetails.Port.Name.RATIS).getValue());
         target = ReplicationManagerUtil.getTargetDatanodes(placementPolicy, 1,
             excludedAndUsedNodes.getUsedNodes(), excludedAndUsedNodes.getExcludedNodes(),
-            new HashSet<>(Collections.singleton(dcName)),
+            new HashSet<>(Collections.singleton(node.getDc(dcMapping))),
             currentContainerSize, replicaCount.getContainer());
       }
 
@@ -517,10 +511,9 @@ public class RatisUnderReplicationHandler
           currentContainerSize, replicaCount.getContainer());
     } else {
       DatanodeDetails node = replicaCount.getReplicas().get(0).getDatanodeDetails();
-      String dcName = dcMapping.get(node.getHostName() + ":" +
-          node.getPort(DatanodeDetails.Port.Name.RATIS).getValue());
       return ReplicationManagerUtil.getTargetDatanodes(placementPolicy,
-          replicaCount.additionalReplicaNeeded(), used, excluded, new HashSet<>(Collections.singleton(dcName)),
+          replicaCount.additionalReplicaNeeded(), used, excluded,
+          new HashSet<>(Collections.singleton(node.getDc(dcMapping))),
           currentContainerSize, replicaCount.getContainer());
     }
   }

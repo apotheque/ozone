@@ -218,8 +218,7 @@ public class TestRatisUnderReplicationHandler {
         conf).stream()
         .collect(Collectors.groupingBy(r -> {
           DatanodeDetails node = r.getDatanodeDetails();
-          return dcMapping.get(node.getHostName() + ":" +
-              node.getPort(DatanodeDetails.Port.Name.RATIS).getValue());
+          return node.getDc(dcMapping);
         }));
 
     // remove the specified number of replicas

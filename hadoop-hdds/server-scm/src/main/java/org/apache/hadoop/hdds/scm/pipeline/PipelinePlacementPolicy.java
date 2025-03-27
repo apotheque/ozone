@@ -319,8 +319,7 @@ public final class PipelinePlacementPolicy extends SCMCommonPlacementPolicy {
     Map<String, List<DatanodeDetails>> nodesPerDatacenter = datacenters.stream()
         .collect(Collectors.toMap(dc -> dc, dc -> new ArrayList<>()));
     for (DatanodeDetails node : healthyNodes) {
-      String nodeDc = dcMapping.get(node.getHostName() + ":" +
-          node.getPort(DatanodeDetails.Port.Name.RATIS).getValue());
+      String nodeDc = node.getDc(dcMapping);
       if (nodesPerDatacenter.containsKey(nodeDc) && nodesPerDatacenter.get(nodeDc).size() < nodesRequiredPerDc) {
         nodesPerDatacenter.get(nodeDc).add(node);
       }

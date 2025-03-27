@@ -89,11 +89,9 @@ public final class SCMContainerPlacementRandom extends SCMCommonPlacementPolicy
         super.chooseDatanodesInternal(usedNodes, excludedNodes, favoredNodes, datacenters,
                 nodesRequired, metadataSizeRequired, dataSizeRequired);
     if (!datacenters.isEmpty()) {
-      healthyNodes = healthyNodes.stream().filter(node -> {
-        String nodeDc = dcMapping.get(node.getHostName() + ":" +
-            node.getPort(DatanodeDetails.Port.Name.RATIS).getValue());
-        return datacenters.contains(nodeDc);
-      }).collect(Collectors.toList());
+      healthyNodes = healthyNodes.stream()
+          .filter(node -> datacenters.contains(node.getDc(dcMapping)))
+          .collect(Collectors.toList());
     }
     if (healthyNodes.size() == nodesRequired) {
       return healthyNodes;

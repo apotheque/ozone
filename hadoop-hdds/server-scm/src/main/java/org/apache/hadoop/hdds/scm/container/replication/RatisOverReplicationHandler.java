@@ -176,11 +176,7 @@ public class RatisOverReplicationHandler
   private Map<String, List<ContainerReplica>> getReplicasByDc(
       Collection<ContainerReplica> replicas) {
     return replicas.stream()
-        .collect(Collectors.groupingBy(r -> {
-          DatanodeDetails node = r.getDatanodeDetails();
-          return dcMapping.get(node.getHostName() + ":" +
-              node.getPort(DatanodeDetails.Port.Name.RATIS).getValue());
-        }));
+        .collect(Collectors.groupingBy(r -> r.getDatanodeDetails().getDc(dcMapping)));
   }
 
   /**

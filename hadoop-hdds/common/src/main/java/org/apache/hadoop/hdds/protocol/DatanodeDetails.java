@@ -21,6 +21,7 @@ package org.apache.hadoop.hdds.protocol;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -278,6 +279,17 @@ public class DatanodeDetails extends NodeImpl implements
   public static boolean isMaintenance(HddsProtos.NodeOperationalState state) {
     return state == HddsProtos.NodeOperationalState.IN_MAINTENANCE ||
         state == HddsProtos.NodeOperationalState.ENTERING_MAINTENANCE;
+  }
+
+  /**
+   * Retrieves the datacenter (DC) identifier for the given Datanode.
+   *
+   * @param dcMapping  A map containing hostname and port-based mappings to datacenter identifiers.
+   * @return The datacenter identifier corresponding to the node's hostname and RATIS port,
+   *         or {@code UNKNOWN} if no mapping is found.
+   */
+  public String getDc(Map<String, String> dcMapping) {
+    return dcMapping.getOrDefault(getHostName() + ":" + getPort(Name.RATIS).getValue(), "UNKNOWN");
   }
 
   /**
