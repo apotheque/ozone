@@ -33,6 +33,7 @@ import org.apache.hadoop.hdds.scm.server.StorageContainerManager;
 import org.apache.hadoop.ozone.HddsDatanodeService;
 import org.apache.hadoop.ozone.MiniOzoneCluster;
 import org.apache.ozone.test.GenericTestUtils;
+import org.apache.ozone.test.tag.Unhealthy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -78,6 +79,7 @@ public class TestRatisPipelineCreateAndDestroy {
   }
 
   @Test @Timeout(unit = TimeUnit.MILLISECONDS, value = 180000)
+  @Unhealthy("UD-646")
   public void testAutomaticPipelineCreationOnPipelineDestroy()
       throws Exception {
     int numOfDatanodes = 6;
@@ -173,6 +175,7 @@ public class TestRatisPipelineCreateAndDestroy {
 
   @EnumSource(value = ReplicationFactor.class, names = {"THREE", "SIX"})
   @ParameterizedTest
+  @Unhealthy("UD-646")
   void createPipelineWithReplicationFactorSix(ReplicationFactor replicationFactor) throws Exception {
     conf.setBoolean(OZONE_SCM_PIPELINE_AUTO_CREATE_FACTOR_ONE, false);
 

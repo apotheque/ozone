@@ -22,6 +22,7 @@ import org.apache.hadoop.hdds.conf.ConfigurationSource;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
 import org.apache.hadoop.hdds.scm.PlacementPolicy;
 import org.apache.hadoop.hdds.scm.SCMCommonPlacementPolicy;
+import org.apache.hadoop.hdds.scm.ScmUtils;
 import org.apache.hadoop.hdds.scm.exceptions.SCMException;
 import org.apache.hadoop.hdds.scm.net.NetworkTopology;
 import org.apache.hadoop.hdds.scm.node.NodeManager;
@@ -29,7 +30,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Container placement policy that randomly chooses healthy datanodes.
@@ -45,6 +48,7 @@ public final class SCMContainerPlacementRandom extends SCMCommonPlacementPolicy
   @VisibleForTesting
   public static final Logger LOG =
       LoggerFactory.getLogger(SCMContainerPlacementRandom.class);
+  private final Map<String, String> dcMapping;
 
   /**
    * Construct a random Block Placement policy.
@@ -56,6 +60,7 @@ public final class SCMContainerPlacementRandom extends SCMCommonPlacementPolicy
       final ConfigurationSource conf, final NetworkTopology networkTopology,
       final boolean fallback, final SCMContainerPlacementMetrics metrics) {
     super(nodeManager, conf);
+    this.dcMapping = ScmUtils.getDcMapping(conf);
   }
 
   /**
@@ -65,6 +70,7 @@ public final class SCMContainerPlacementRandom extends SCMCommonPlacementPolicy
    *                      pipeline.
    * @param excludedNodes - list of the datanodes to exclude.
    * @param favoredNodes - list of nodes preferred.
+   * @param datacenters - set of datacenters from which nodes will be selected.
    * @param nodesRequired - number of datanodes required.
    * @param dataSizeRequired - size required for the container.
    * @param metadataSizeRequired - size required for Ratis metadata.
@@ -82,7 +88,11 @@ public final class SCMContainerPlacementRandom extends SCMCommonPlacementPolicy
     List<DatanodeDetails> healthyNodes =
         super.chooseDatanodesInternal(usedNodes, excludedNodes, favoredNodes, datacenters,
                 nodesRequired, metadataSizeRequired, dataSizeRequired);
-
+    if (!datacenters.isEmpty()) {
+      healthyNodes = healthyNodes.stream()
+          .filter(node -> datacenters.contains(node.getDc(dcMapping)))
+          .collect(Collectors.toList());
+    }
     if (healthyNodes.size() == nodesRequired) {
       return healthyNodes;
     }

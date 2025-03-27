@@ -21,23 +21,29 @@ package org.apache.hadoop.hdds.scm.container.replication;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hdds.client.RatisReplicationConfig;
+import org.apache.hadoop.hdds.client.ReplicationFactor;
+import org.apache.hadoop.hdds.conf.OzoneConfiguration;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
 import org.apache.hadoop.hdds.protocol.MockDatanodeDetails;
 import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerDatanodeProtocolProtos.ContainerReplicaProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerDatanodeProtocolProtos.ContainerReplicaProto.State;
 import org.apache.hadoop.hdds.scm.PlacementPolicy;
+import org.apache.hadoop.hdds.scm.ScmUtils;
 import org.apache.hadoop.hdds.scm.container.ContainerInfo;
 import org.apache.hadoop.hdds.scm.container.ContainerReplica;
 import org.apache.hadoop.hdds.scm.container.placement.algorithms.ContainerPlacementStatusDefault;
 import org.apache.hadoop.hdds.scm.node.NodeStatus;
 import org.apache.hadoop.hdds.scm.node.states.NodeNotFoundException;
+import org.apache.hadoop.ozone.container.common.SCMTestUtils;
 import org.apache.hadoop.ozone.protocol.commands.DeleteContainerCommand;
 import org.apache.hadoop.ozone.protocol.commands.SCMCommand;
 import org.apache.ozone.test.GenericTestUtils;
 import org.apache.ratis.protocol.exceptions.NotLeaderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 import org.slf4j.event.Level;
@@ -47,16 +53,20 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.NodeOperationalState.DECOMMISSIONING;
 import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.NodeOperationalState.IN_SERVICE;
+import static org.apache.hadoop.hdds.scm.ScmConfigKeys.OZONE_SCM_DC_DATANODE_MAPPING_KEY;
 import static org.apache.hadoop.hdds.scm.container.replication.ReplicationTestUtil.createContainer;
 import static org.apache.hadoop.hdds.scm.container.replication.ReplicationTestUtil.createContainerReplica;
 import static org.apache.hadoop.hdds.scm.container.replication.ReplicationTestUtil.createReplicas;
+import static org.apache.hadoop.hdds.scm.container.replication.ReplicationTestUtil.createReplicasAcrossDcs;
 import static org.apache.hadoop.hdds.scm.container.replication.ReplicationTestUtil.createReplicasWithSameOrigin;
+import static org.apache.hadoop.ozone.OzoneConfigKeys.OZONE_REPLICATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -81,6 +91,7 @@ public class TestRatisOverReplicationHandler {
   private static final RatisReplicationConfig RATIS_REPLICATION_CONFIG =
       RatisReplicationConfig.getInstance(HddsProtos.ReplicationFactor.THREE);
   private PlacementPolicy policy;
+  private OzoneConfiguration conf;
   private ReplicationManager replicationManager;
   private Set<Pair<DatanodeDetails, SCMCommand<?>>> commandsSent;
 
@@ -89,7 +100,7 @@ public class TestRatisOverReplicationHandler {
       CommandTargetOverloadedException {
     container = createContainer(HddsProtos.LifeCycleState.CLOSED,
         RATIS_REPLICATION_CONFIG);
-
+    conf = SCMTestUtils.getConf();
     policy = Mockito.mock(PlacementPolicy.class);
     when(policy.validateContainerPlacement(
         anyList(), Mockito.anyInt()))
@@ -144,6 +155,57 @@ public class TestRatisOverReplicationHandler {
 
     testProcessing(replicas, Collections.emptyList(),
         getOverReplicatedHealthResult(), 0);
+  }
+
+  /**
+   * Container has up to 6 replicas spread across 3 datacenters with replication factor 3.
+   * Test different combinations of replicas.
+   */
+  @ParameterizedTest
+  @CsvSource({
+      // number of replicas to keep per datacenter
+      "1, 1, 1", // no over replication, shouldn't delete any replicas
+      "1, 2, 1", // over replication in 2nd dc, should create 1 delete command
+      "2, 2, 2", // over replication in every dc, should create 3 delete commands
+  })
+  public void testOverReplicatedAcrossDcs(int keepInDc1, int keepInDc2,
+                                          int keepInDc3) throws IOException {
+    ReplicationFactor replicationFactor = ReplicationFactor.THREE;
+    conf.set(OZONE_REPLICATION, replicationFactor.toString());
+    conf.set(OZONE_SCM_DC_DATANODE_MAPPING_KEY,
+        "localhost:0=dc0,localhost:1=dc0,localhost:2=dc1,localhost:3=dc1,localhost:4=dc2,localhost:5=dc2");
+    Map<String, String> dcMapping = ScmUtils.getDcMapping(conf);
+    container = ReplicationTestUtil.createContainer(
+        HddsProtos.LifeCycleState.CLOSED, RatisReplicationConfig.getInstance(replicationFactor.toProto()),
+        new HashSet<>(dcMapping.values()));
+
+    // generate 6 replicas spread across 3 datacenters
+    Map<String, List<ContainerReplica>> replicasByDc = createReplicasAcrossDcs(container.containerID(), State.CLOSED,
+        conf).stream()
+        .collect(Collectors.groupingBy(r -> {
+          DatanodeDetails node = r.getDatanodeDetails();
+          return node.getDc(dcMapping);
+        }));
+
+    // remove the specified number of replicas
+    Set<ContainerReplica> replicas = new HashSet<>();
+    for (Map.Entry<String, List<ContainerReplica>> entry : replicasByDc.entrySet()) {
+      switch (entry.getKey()) {
+      case "dc0":
+        replicas.addAll(entry.getValue().stream().limit(keepInDc1).collect(Collectors.toList()));
+        break;
+      case "dc1":
+        replicas.addAll(entry.getValue().stream().limit(keepInDc2).collect(Collectors.toList()));
+        break;
+      case "dc2":
+        replicas.addAll(entry.getValue().stream().limit(keepInDc3).collect(Collectors.toList()));
+        break;
+      default:
+      }
+    }
+
+    testProcessing(replicas, Collections.emptyList(),
+        getOverReplicatedHealthResult(), keepInDc1 + keepInDc2 + keepInDc3 - 3);
   }
 
   /**
@@ -478,8 +540,7 @@ public class TestRatisOverReplicationHandler {
     replicas.add(quasiClosedReplica);
     replicas.addAll(closedReplicas);
 
-    RatisOverReplicationHandler handler =
-        new RatisOverReplicationHandler(policy, replicationManager);
+    RatisOverReplicationHandler handler = new RatisOverReplicationHandler(policy, conf, replicationManager);
 
     try {
       handler.processAndSendCommands(replicas, Collections.emptyList(),
@@ -520,7 +581,7 @@ public class TestRatisOverReplicationHandler {
         .sendThrottledDeleteCommand(any(), anyInt(), any(), anyBoolean());
 
     RatisOverReplicationHandler handler =
-        new RatisOverReplicationHandler(policy, replicationManager);
+        new RatisOverReplicationHandler(policy, conf, replicationManager);
 
     // Only 1 command should be sent, as the first call to sendThrottledDelete
     // throws an overloaded exception. Rather than skip to the next one, the skipped
@@ -548,7 +609,7 @@ public class TestRatisOverReplicationHandler {
       ContainerHealthResult healthResult,
       int expectNumCommands) throws IOException {
     RatisOverReplicationHandler handler =
-        new RatisOverReplicationHandler(policy, replicationManager);
+        new RatisOverReplicationHandler(policy, conf, replicationManager);
 
     handler.processAndSendCommands(replicas, pendingOps,
             healthResult, 2);

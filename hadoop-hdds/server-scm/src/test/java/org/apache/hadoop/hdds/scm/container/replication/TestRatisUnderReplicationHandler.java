@@ -21,6 +21,7 @@ package org.apache.hadoop.hdds.scm.container.replication;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hdds.client.RatisReplicationConfig;
+import org.apache.hadoop.hdds.client.ReplicationFactor;
 import org.apache.hadoop.hdds.conf.OzoneConfiguration;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
 import org.apache.hadoop.hdds.protocol.MockDatanodeDetails;
@@ -28,6 +29,7 @@ import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerDatanodeProtocolProtos;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerDatanodeProtocolProtos.ContainerReplicaProto.State;
 import org.apache.hadoop.hdds.scm.PlacementPolicy;
+import org.apache.hadoop.hdds.scm.ScmUtils;
 import org.apache.hadoop.hdds.scm.container.ContainerInfo;
 import org.apache.hadoop.hdds.scm.container.ContainerReplica;
 import org.apache.hadoop.hdds.scm.container.replication.ContainerHealthResult.UnderReplicatedHealthResult;
@@ -42,6 +44,9 @@ import org.apache.ratis.protocol.exceptions.NotLeaderException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
@@ -49,19 +54,25 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.NodeOperationalState.DECOMMISSIONING;
 import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.NodeOperationalState.ENTERING_MAINTENANCE;
 import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.NodeOperationalState.IN_MAINTENANCE;
 import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.NodeOperationalState.IN_SERVICE;
 import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.ReplicationFactor.THREE;
+import static org.apache.hadoop.hdds.scm.ScmConfigKeys.OZONE_SCM_DC_DATANODE_MAPPING_KEY;
 import static org.apache.hadoop.hdds.scm.container.replication.ReplicationTestUtil.createContainer;
 import static org.apache.hadoop.hdds.scm.container.replication.ReplicationTestUtil.createContainerInfo;
 import static org.apache.hadoop.hdds.scm.container.replication.ReplicationTestUtil.createContainerReplica;
 import static org.apache.hadoop.hdds.scm.container.replication.ReplicationTestUtil.createReplicas;
+import static org.apache.hadoop.hdds.scm.container.replication.ReplicationTestUtil.createReplicasAcrossDcs;
+import static org.apache.hadoop.ozone.OzoneConfigKeys.OZONE_REPLICATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -151,6 +162,84 @@ public class TestRatisUnderReplicationHandler {
   public void testUnderReplicatedAndUnrecoverable() throws IOException {
     testProcessing(Collections.emptySet(), Collections.emptyList(),
         getUnderReplicatedHealthResult(), 2, 0);
+  }
+
+  /**
+   * When the container is under replicated and unrecoverable in 1, 2 or 3 datacenters (no replicas
+   * exist), the handler will not create any commands.
+   */
+  @ParameterizedTest
+  @ValueSource(ints = {1, 2, 3})
+  public void testUnderReplicatedAndUnrecoverableAcrossDcs(int removedCount) throws IOException {
+    conf.set(OZONE_REPLICATION, ReplicationFactor.THREE.toString());
+    conf.set(OZONE_SCM_DC_DATANODE_MAPPING_KEY, "localhost:0=dc0,localhost:1=dc1,localhost:2=dc2");
+    Set<String> dcMapping = new HashSet<>(ScmUtils.getDcMapping(conf).values());
+    container = ReplicationTestUtil.createContainer(
+        HddsProtos.LifeCycleState.CLOSED, RATIS_REPLICATION_CONFIG, dcMapping);
+
+    // generate 3 replicas spread across 3 datacenters
+    Set<ContainerReplica> replicas = createReplicasAcrossDcs(container.containerID(), State.CLOSED, conf);
+
+    // remove the specified number of replicas
+    Iterator<ContainerReplica> iterator = replicas.iterator();
+    for (int i = 0; i < removedCount; i++) {
+      iterator.next();
+      iterator.remove();
+    }
+
+    testProcessing(replicas, Collections.emptyList(),
+        getUnderReplicatedHealthResult(), 2, 0);
+  }
+
+  /**
+   * When the container is under replicated and recoverable in 1, 2 or 3 datacenters (one extra replica
+   * exists) with replication factor 6, the handler should create replication commands.
+   */
+  @ParameterizedTest
+  @CsvSource({
+      // number of replicas to keep per datacenter
+      "1, 0, 0", // 1st dc is recoverable, 1 command should be sent
+      "1, 1, 0", // 1st and 2nd dcs are recoverable, 2 commands should be sent
+      "1, 1, 1" // all dcs are recoverable, 3 commands should be sent
+  })
+  public void testUnderReplicatedAndRecoverableAcrossDcs(int keepInDc1, int keepInDc2,
+                                                         int keepInDc3) throws IOException {
+    ReplicationFactor replicationFactor = ReplicationFactor.SIX;
+    conf.set(OZONE_REPLICATION, replicationFactor.toString());
+    conf.set(OZONE_SCM_DC_DATANODE_MAPPING_KEY,
+        "localhost:0=dc0,localhost:1=dc0,localhost:2=dc1,localhost:3=dc1,localhost:4=dc2,localhost:5=dc2");
+    Map<String, String> dcMapping = ScmUtils.getDcMapping(conf);
+    container = ReplicationTestUtil.createContainer(
+        HddsProtos.LifeCycleState.CLOSED, RatisReplicationConfig.getInstance(replicationFactor.toProto()),
+        new HashSet<>(dcMapping.values()));
+
+    // generate 6 replicas spread across 3 datacenters
+    Map<String, List<ContainerReplica>> replicasByDc = createReplicasAcrossDcs(container.containerID(), State.CLOSED,
+        conf).stream()
+        .collect(Collectors.groupingBy(r -> {
+          DatanodeDetails node = r.getDatanodeDetails();
+          return node.getDc(dcMapping);
+        }));
+
+    // remove the specified number of replicas
+    Set<ContainerReplica> replicas = new HashSet<>();
+    for (Map.Entry<String, List<ContainerReplica>> entry : replicasByDc.entrySet()) {
+      switch (entry.getKey()) {
+      case "dc0":
+        replicas.addAll(entry.getValue().stream().limit(keepInDc1).collect(Collectors.toList()));
+        break;
+      case "dc1":
+        replicas.addAll(entry.getValue().stream().limit(keepInDc2).collect(Collectors.toList()));
+        break;
+      case "dc2":
+        replicas.addAll(entry.getValue().stream().limit(keepInDc3).collect(Collectors.toList()));
+        break;
+      default:
+      }
+    }
+
+    testProcessing(replicas, Collections.emptyList(),
+        getUnderReplicatedHealthResult(), 2, keepInDc1 + keepInDc2 + keepInDc3);
   }
 
   /**

@@ -2472,7 +2472,7 @@ public class LegacyReplicationManager {
         excludeList.addAll(replicationInFlight);
         final List<DatanodeDetails> selectedDatanodes =
             ReplicationManagerUtil.getTargetDatanodes(containerPlacement,
-                replicasNeeded, null, excludeList, currentContainerSize,
+                replicasNeeded, null, excludeList, Collections.emptySet(), currentContainerSize,
                 container);
 
         if (additionalReplicasNeeded > 0) {
@@ -2543,7 +2543,7 @@ public class LegacyReplicationManager {
       try {
         final List<DatanodeDetails> target =
             ReplicationManagerUtil.getTargetDatanodes(containerPlacement,
-                1, null, excludeList, currentContainerSize,
+                1, null, excludeList, Collections.emptySet(), currentContainerSize,
                 container);
         sendReplicateCommand(container, target.iterator().next(),
             ImmutableList.of(replica.getDatanodeDetails()));

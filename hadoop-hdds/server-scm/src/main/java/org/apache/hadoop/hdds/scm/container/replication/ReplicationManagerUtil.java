@@ -31,10 +31,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -74,7 +75,7 @@ public final class ReplicationManagerUtil {
    */
   public static List<DatanodeDetails> getTargetDatanodes(PlacementPolicy policy,
       int requiredNodes, List<DatanodeDetails> usedNodes,
-      List<DatanodeDetails> excludedNodes, long defaultContainerSize,
+      List<DatanodeDetails> excludedNodes, Set<String> datacenters, long defaultContainerSize,
       ContainerInfo container) throws SCMException {
 
     // Ensure that target datanodes have enough space to hold a complete
@@ -86,10 +87,10 @@ public final class ReplicationManagerUtil {
     while (mutableRequiredNodes > 0) {
       try {
         if (usedNodes == null) {
-          return policy.chooseDatanodes(excludedNodes, null, Collections.emptySet(),
+          return policy.chooseDatanodes(excludedNodes, null, datacenters,
               mutableRequiredNodes, 0, dataSizeRequired);
         } else {
-          return policy.chooseDatanodes(usedNodes, excludedNodes, null, Collections.emptySet(),
+          return policy.chooseDatanodes(usedNodes, excludedNodes, null, datacenters,
               mutableRequiredNodes, 0, dataSizeRequired);
         }
       } catch (IOException e) {
@@ -375,6 +376,19 @@ public final class ReplicationManagerUtil {
     }
 
     return nonUniqueDeleteCandidates;
+  }
+
+  /**
+   * Groups {@link ContainerReplica} instances by datacenter using the provided mapping.
+   *
+   * @param replicas  The replicas to group.
+   * @param dcMapping Mapping of datanode identifiers to datacenters.
+   * @return A map of datacenter names to sets of replicas.
+   */
+  static Map<String, Set<ContainerReplica>> getReplicasByDc(
+      Collection<ContainerReplica> replicas, Map<String, String> dcMapping) {
+    return replicas.stream()
+        .collect(Collectors.groupingBy(r -> r.getDatanodeDetails().getDc(dcMapping), Collectors.toSet()));
   }
 
   private static void checkUniqueness(Set<UUID> existingOriginNodeIDs,

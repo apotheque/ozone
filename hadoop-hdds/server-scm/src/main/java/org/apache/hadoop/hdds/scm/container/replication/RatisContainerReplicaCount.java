@@ -95,6 +95,18 @@ public class RatisContainerReplicaCount implements ContainerReplicaCount {
       Set<ContainerReplica> replicas,
       List<ContainerReplicaOp> replicaPendingOps,
       int minHealthyForMaintenance, boolean considerUnhealthy) {
+    this(containerInfo,
+        replicas,
+        replicaPendingOps,
+        containerInfo.getReplicationFactor().getNumber(),
+        minHealthyForMaintenance,
+        considerUnhealthy);
+  }
+
+  public RatisContainerReplicaCount(ContainerInfo containerInfo,
+                                    Set<ContainerReplica> replicas,
+                                    List<ContainerReplicaOp> replicaPendingOps,
+                                    int replicationFactor, int minHealthyForMaintenance, boolean considerUnhealthy) {
     // Iterate replicas in deterministic order to avoid potential data loss
     // on delete.
     // See https://issues.apache.org/jira/browse/HDDS-4589.
@@ -104,7 +116,7 @@ public class RatisContainerReplicaCount implements ContainerReplicaCount {
         .collect(Collectors.toList());
 
     this.container = containerInfo;
-    this.repFactor = containerInfo.getReplicationFactor().getNumber();
+    this.repFactor = replicationFactor;
     this.minHealthyForMaintenance
         = Math.min(this.repFactor, minHealthyForMaintenance);
     this.considerUnhealthy = considerUnhealthy;

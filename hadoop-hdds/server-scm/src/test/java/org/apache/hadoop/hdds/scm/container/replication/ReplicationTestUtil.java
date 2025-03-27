@@ -19,6 +19,7 @@ package org.apache.hadoop.hdds.scm.container.replication;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hdds.client.ReplicationConfig;
+import org.apache.hadoop.hdds.conf.ConfigurationSource;
 import org.apache.hadoop.hdds.conf.OzoneConfiguration;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
 import org.apache.hadoop.hdds.protocol.MockDatanodeDetails;
@@ -26,6 +27,7 @@ import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerDatanodeProtocolProtos.ContainerReplicaProto;
 import org.apache.hadoop.hdds.scm.PlacementPolicy;
 import org.apache.hadoop.hdds.scm.SCMCommonPlacementPolicy;
+import org.apache.hadoop.hdds.scm.ScmUtils;
 import org.apache.hadoop.hdds.scm.container.ContainerID;
 import org.apache.hadoop.hdds.scm.container.ContainerInfo;
 import org.apache.hadoop.hdds.scm.container.ContainerReplica;
@@ -45,9 +47,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.NodeOperationalState.IN_SERVICE;
 import static org.apache.hadoop.hdds.protocol.proto.StorageContainerDatanodeProtocolProtos.ContainerReplicaProto.State.CLOSED;
@@ -94,6 +98,31 @@ public final class ReplicationTestUtil {
     for (int i : indexes) {
       replicas.add(createContainerReplica(
           containerID, i, IN_SERVICE, replicaState));
+    }
+    return replicas;
+  }
+
+  public static Set<ContainerReplica> createReplicasAcrossDcs(ContainerID containerID,
+                                                              ContainerReplicaProto.State replicaState,
+                                                              ConfigurationSource conf) {
+    Set<ContainerReplica> replicas = new HashSet<>();
+    Map<String, List<String>> nodesByDc = ScmUtils.getDcMapping(conf).entrySet()
+        .stream()
+        .collect(Collectors.groupingBy(
+            Map.Entry::getValue,
+            Collectors.mapping(Map.Entry::getKey, Collectors.toList())
+        ));
+
+    for (Map.Entry<String, List<String>> entry : nodesByDc.entrySet()) {
+      for (String node : entry.getValue()) {
+        String[] parts = node.split(":");
+        String hostname = parts[0];
+        int port = Integer.parseInt(parts[1]);
+        DatanodeDetails datanodeDetails = MockDatanodeDetails.createDatanodeDetails(UUID.randomUUID().toString(),
+            hostname, null, null, port);
+        replicas.add(createContainerReplica(containerID, 0, IN_SERVICE,
+            replicaState, 123L, 1234L, datanodeDetails, datanodeDetails.getUuid()));
+      }
     }
     return replicas;
   }
@@ -225,6 +254,15 @@ public final class ReplicationTestUtil {
     return TestContainerInfo.newBuilderForTest()
         .setState(state)
         .setReplicationConfig(replicationConfig)
+        .build();
+  }
+
+  public static ContainerInfo createContainer(HddsProtos.LifeCycleState state,
+                                              ReplicationConfig replicationConfig, Set<String> datacenters) {
+    return TestContainerInfo.newBuilderForTest()
+        .setState(state)
+        .setReplicationConfig(replicationConfig)
+        .setDatacenters(datacenters)
         .build();
   }
 
