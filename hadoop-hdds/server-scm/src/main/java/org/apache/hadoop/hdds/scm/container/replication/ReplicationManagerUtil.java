@@ -383,12 +383,12 @@ public final class ReplicationManagerUtil {
    *
    * @param replicas  The replicas to group.
    * @param dcMapping Mapping of datanode identifiers to datacenters.
-   * @return A map of datacenter names to lists of replicas.
+   * @return A map of datacenter names to sets of replicas.
    */
-  static Map<String, List<ContainerReplica>> getReplicasByDc(
+  static Map<String, Set<ContainerReplica>> getReplicasByDc(
       Collection<ContainerReplica> replicas, Map<String, String> dcMapping) {
     return replicas.stream()
-        .collect(Collectors.groupingBy(r -> r.getDatanodeDetails().getDc(dcMapping)));
+        .collect(Collectors.groupingBy(r -> r.getDatanodeDetails().getDc(dcMapping), Collectors.toSet()));
   }
 
   private static void checkUniqueness(Set<UUID> existingOriginNodeIDs,

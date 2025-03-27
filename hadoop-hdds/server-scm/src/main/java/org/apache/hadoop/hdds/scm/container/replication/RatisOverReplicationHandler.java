@@ -86,11 +86,10 @@ public class RatisOverReplicationHandler
     if (result.getContainerInfo().getDatacenters().isEmpty()) {
       return processAndSendCommandsInternal(replicas, pendingOps, result, minHealthyForMaintenance);
     } else {
-      Map<String, List<ContainerReplica>> replicasByDc = ReplicationManagerUtil.getReplicasByDc(replicas, dcMapping);
+      Map<String, Set<ContainerReplica>> replicasByDc = ReplicationManagerUtil.getReplicasByDc(replicas, dcMapping);
       int commandsSent = 0;
-      for (Map.Entry<String, List<ContainerReplica>> entry: replicasByDc.entrySet()) {
-        Set<ContainerReplica> uniqueReplicas = new HashSet<>(entry.getValue());
-        commandsSent += processAndSendCommandsInternal(uniqueReplicas, pendingOps, result, minHealthyForMaintenance);
+      for (Map.Entry<String, Set<ContainerReplica>> entry: replicasByDc.entrySet()) {
+        commandsSent += processAndSendCommandsInternal(entry.getValue(), pendingOps, result, minHealthyForMaintenance);
       }
       return commandsSent;
     }
