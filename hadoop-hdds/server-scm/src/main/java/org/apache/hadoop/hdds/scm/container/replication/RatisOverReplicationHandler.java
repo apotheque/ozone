@@ -86,7 +86,7 @@ public class RatisOverReplicationHandler
     if (result.getContainerInfo().getDatacenters().isEmpty()) {
       return processAndSendCommandsInternal(replicas, pendingOps, result, minHealthyForMaintenance);
     } else {
-      Map<String, List<ContainerReplica>> replicasByDc = getReplicasByDc(replicas);
+      Map<String, List<ContainerReplica>> replicasByDc = ReplicationManagerUtil.getReplicasByDc(replicas, dcMapping);
       int commandsSent = 0;
       for (Map.Entry<String, List<ContainerReplica>> entry: replicasByDc.entrySet()) {
         Set<ContainerReplica> uniqueReplicas = new HashSet<>(entry.getValue());
@@ -171,12 +171,6 @@ public class RatisOverReplicationHandler
       return false;
     }
     return true;
-  }
-
-  private Map<String, List<ContainerReplica>> getReplicasByDc(
-      Collection<ContainerReplica> replicas) {
-    return replicas.stream()
-        .collect(Collectors.groupingBy(r -> r.getDatanodeDetails().getDc(dcMapping)));
   }
 
   /**

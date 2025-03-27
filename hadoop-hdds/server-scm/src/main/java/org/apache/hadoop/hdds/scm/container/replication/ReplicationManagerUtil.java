@@ -31,9 +31,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -374,6 +376,19 @@ public final class ReplicationManagerUtil {
     }
 
     return nonUniqueDeleteCandidates;
+  }
+
+  /**
+   * Groups {@link ContainerReplica} instances by datacenter using the provided mapping.
+   *
+   * @param replicas  The replicas to group.
+   * @param dcMapping Mapping of datanode identifiers to datacenters.
+   * @return A map of datacenter names to lists of replicas.
+   */
+  static Map<String, List<ContainerReplica>> getReplicasByDc(
+      Collection<ContainerReplica> replicas, Map<String, String> dcMapping) {
+    return replicas.stream()
+        .collect(Collectors.groupingBy(r -> r.getDatanodeDetails().getDc(dcMapping)));
   }
 
   private static void checkUniqueness(Set<UUID> existingOriginNodeIDs,

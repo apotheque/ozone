@@ -38,7 +38,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -98,7 +97,7 @@ public class RatisUnderReplicationHandler
     if (result.getContainerInfo().getDatacenters().isEmpty()) {
       return processAndSendCommandsInternal(replicas, pendingOps, result, minHealthyForMaintenance);
     } else {
-      Map<String, List<ContainerReplica>> replicasByDc = getReplicasByDc(replicas);
+      Map<String, List<ContainerReplica>> replicasByDc = ReplicationManagerUtil.getReplicasByDc(replicas, dcMapping);
       int commandsSent = 0;
       for (Map.Entry<String, List<ContainerReplica>> entry: replicasByDc.entrySet()) {
         Set<ContainerReplica> uniqueReplicas = new HashSet<>(entry.getValue());
@@ -192,12 +191,6 @@ public class RatisUnderReplicationHandler
           replicaCount.additionalReplicaNeeded(), targetDatanodes.size());
     }
     return commandsSent;
-  }
-
-  private Map<String, List<ContainerReplica>> getReplicasByDc(
-      Collection<ContainerReplica> replicas) {
-    return replicas.stream()
-        .collect(Collectors.groupingBy(r -> r.getDatanodeDetails().getDc(dcMapping)));
   }
 
   /**
