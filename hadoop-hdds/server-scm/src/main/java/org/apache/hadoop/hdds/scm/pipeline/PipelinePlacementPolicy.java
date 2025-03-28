@@ -18,12 +18,19 @@
 
 package org.apache.hadoop.hdds.scm.pipeline;
 
+import static org.apache.hadoop.hdds.scm.exceptions.SCMException.ResultCodes.INVALID_CAPACITY;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.hadoop.hdds.client.RatisReplicationConfig;
 import org.apache.hadoop.hdds.conf.ConfigurationSource;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
-import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
 import org.apache.hadoop.hdds.protocol.proto.HddsProtos.ReplicationFactor;
 import org.apache.hadoop.hdds.scm.SCMCommonPlacementPolicy;
 import org.apache.hadoop.hdds.scm.ScmConfigKeys;
@@ -34,13 +41,6 @@ import org.apache.hadoop.hdds.scm.node.NodeManager;
 import org.apache.hadoop.hdds.scm.node.NodeStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Pipeline placement policy that choose datanodes based on load balancing
@@ -312,7 +312,7 @@ public final class PipelinePlacementPolicy extends SCMCommonPlacementPolicy {
     if (nodesRequired % datacenters.size() != 0) {
       String msg = String.format("Number of nodes required (%d) must be a multiple of requested datacenters (%d).",
           nodesRequired, datacenters.size());
-      throw new SCMException(msg, SCMException.ResultCodes.INVALID_CAPACITY);
+      throw new SCMException(msg, INVALID_CAPACITY);
     }
 
     int nodesRequiredPerDc = nodesRequired / datacenters.size();
@@ -356,10 +356,9 @@ public final class PipelinePlacementPolicy extends SCMCommonPlacementPolicy {
     Preconditions.checkNotNull(healthyNodes);
     Preconditions.checkState(nodesRequired >= 1);
 
-    if (nodesRequired + usedNodes.size() !=
-        HddsProtos.ReplicationFactor.THREE.getNumber()) {
-      throw new SCMException("Nodes required number is not supported: " +
-          nodesRequired, SCMException.ResultCodes.INVALID_CAPACITY);
+    if (nodesRequired + usedNodes.size() != ReplicationFactor.THREE.getNumber()
+            && nodesRequired + usedNodes.size() != ReplicationFactor.SIX.getNumber()) {
+      throw new SCMException("Nodes required number is not supported: " + nodesRequired, INVALID_CAPACITY);
     }
 
     List <DatanodeDetails> results = new ArrayList<>(nodesRequired);
@@ -497,7 +496,7 @@ public final class PipelinePlacementPolicy extends SCMCommonPlacementPolicy {
       // Maximum 2 used nodes can exist.
       LOG.warn("More than 2 used nodes, unable to choose anchor node.");
       throw new SCMException("Used Nodes required number is not supported: " +
-          usedNodes.size(), SCMException.ResultCodes.INVALID_CAPACITY);
+          usedNodes.size(), INVALID_CAPACITY);
     }
 
     if (nextNode == null) {

@@ -24,10 +24,16 @@ level prefix key name, level default cost and max levels.
     <!-- The version of network topology configuration file format, it must be an integer -->
     <layoutversion>1</layoutversion>
     <layers>
-        <layer id="datacenter">
+        <layer id="company">
             <prefix></prefix>
-            <cost>1</cost>
+            <cost>1000</cost>
             <type>Root</type>
+        </layer>
+        <layer id="datacenter">
+            <prefix>dc</prefix>
+            <cost>100</cost>
+            <type>InnerNode</type>
+            <default>/default-dc</default>
         </layer>
         <!-- layer id is only used as the reference internally in this document -->
         <layer id="rack">
@@ -59,7 +65,7 @@ level prefix key name, level default cost and max levels.
         </layer>
     </layers>
     <topology>
-        <path>/datacenter/rack/node</path>
+        <path>/company/datacenter/rack/node</path>
         <!-- When this field is true, each InnerNode layer should has its prefix defined with not empty value,
          otherwise the content is not valid. Default value is false.
          -->

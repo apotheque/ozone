@@ -317,6 +317,7 @@
             <exclude>**/report.html</exclude>
             <exclude>**/.idea/**</exclude>
             <exclude>**/.ssh/id_rsa*</exclude>
+            <exclude>**/mapping</exclude>
             <exclude>dev-support/*tests</exclude>
             <exclude>dev-support/checkstyle*</exclude>
             <exclude>dev-support/jdiff/**</exclude>

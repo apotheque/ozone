@@ -20,10 +20,6 @@ package org.apache.hadoop.hdds.scm.net;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import org.apache.commons.collections.CollectionUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,11 +31,14 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
-
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.hdds.conf.ConfigurationSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.apache.hadoop.hdds.scm.net.NetConstants.ANCESTOR_GENERATION_DEFAULT;
 import static org.apache.hadoop.hdds.scm.net.NetConstants.ROOT;
 import static org.apache.hadoop.hdds.scm.net.NetConstants.SCOPE_REVERSE_STR;
-import static org.apache.hadoop.hdds.scm.net.NetConstants.ANCESTOR_GENERATION_DEFAULT;
 
 /**
  * The class represents a cluster of computers with a tree hierarchical
@@ -50,6 +49,9 @@ import static org.apache.hadoop.hdds.scm.net.NetConstants.ANCESTOR_GENERATION_DE
 public class NetworkTopologyImpl implements NetworkTopology {
   public static final Logger LOG =
       LoggerFactory.getLogger(NetworkTopologyImpl.class);
+
+  // TODO: Should be extracted into configurable parameter.
+  private static final int READ_COST_LIMIT = 100;
 
   /** The Inner node crate factory. */
   private final InnerNode.Factory factory;
@@ -770,7 +772,7 @@ public class NetworkTopologyImpl implements NetworkTopology {
    */
   @Override
   public <N extends Node> List<N> sortByDistanceCost(Node reader,
-      List<N> nodes, int activeLen) {
+      List<N> nodes, int activeLen, boolean forRead) {
     // shuffle input list of nodes if reader is not defined
     if (reader == null) {
       List<N> shuffledNodes =
@@ -783,13 +785,16 @@ public class NetworkTopologyImpl implements NetworkTopology {
     for (int i = 0; i < activeLen; i++) {
       costs[i] = getDistanceCost(reader, nodes.get(i));
     }
+
     // Add cost/node pairs to a TreeMap to sort
     NavigableMap<Integer, List<N>> tree = new TreeMap<>();
     for (int i = 0; i < activeLen; i++) {
       int cost = costs[i];
       N node = nodes.get(i);
-      tree.computeIfAbsent(cost, k -> Lists.newArrayListWithExpectedSize(1))
-          .add(node);
+      if (cost < READ_COST_LIMIT || !forRead) {
+        tree.computeIfAbsent(cost, k -> Lists.newArrayListWithExpectedSize(1))
+                .add(node);
+      }
     }
 
     List<N> ret = new ArrayList<>();
@@ -800,8 +805,10 @@ public class NetworkTopologyImpl implements NetworkTopology {
       }
     }
 
-    Preconditions.checkState(ret.size() == activeLen,
-        "Wrong number of nodes sorted!");
+    if (!forRead) {
+      Preconditions.checkState(ret.size() == activeLen,  "Wrong number of nodes sorted!");
+    }
+
     return ret;
   }
 
