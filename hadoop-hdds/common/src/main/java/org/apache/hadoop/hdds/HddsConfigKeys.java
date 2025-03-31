@@ -97,6 +97,11 @@ public final class HddsConfigKeys {
   public static final boolean
       HDDS_SCM_SAFEMODE_PIPELINE_AVAILABILITY_CHECK_DEFAULT = true;
 
+  public static final String HDDS_SCM_BACKGROUND_PIPELINE_CREATOR_ENABLED =
+          "hdds.scm.background.pipeline.creator.enabled";
+  public static final boolean
+          HDDS_SCM_BACKGROUND_PIPELINE_CREATOR_ENABLED_DEFAULT = true;
+
   public static final String HDDS_SCM_SAFEMODE_PIPELINE_CREATION =
       "hdds.scm.safemode.pipeline.creation";
   public static final boolean

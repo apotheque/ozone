@@ -45,6 +45,8 @@ import org.apache.hadoop.ozone.OzoneConfigKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.hadoop.hdds.HddsConfigKeys.HDDS_SCM_BACKGROUND_PIPELINE_CREATOR_ENABLED;
+import static org.apache.hadoop.hdds.HddsConfigKeys.HDDS_SCM_BACKGROUND_PIPELINE_CREATOR_ENABLED_DEFAULT;
 import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.ReplicationType.RATIS;
 import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.ReplicationType.STAND_ALONE;
 import static org.apache.hadoop.hdds.scm.ScmConfigKeys.OZONE_SCM_RATIS_PIPELINE_LIMIT;
@@ -196,6 +198,9 @@ public class BackgroundPipelineCreator implements SCMService {
 
   private boolean skipCreation(ReplicationConfig replicationConfig,
       boolean autoCreate) {
+    if (!isBPCEnabled()) {
+      return true;
+    }
     if (replicationConfig.getReplicationType().equals(RATIS)) {
       return RatisReplicationConfig
           .hasFactor(replicationConfig, ReplicationFactor.ONE) && (!autoCreate);
@@ -206,6 +211,11 @@ public class BackgroundPipelineCreator implements SCMService {
           .getReplicationFactor() != ReplicationFactor.ONE;
     }
     return true;
+  }
+
+  private boolean isBPCEnabled() {
+    return conf.getBoolean(HDDS_SCM_BACKGROUND_PIPELINE_CREATOR_ENABLED,
+            HDDS_SCM_BACKGROUND_PIPELINE_CREATOR_ENABLED_DEFAULT);
   }
 
   private void createPipelines() throws RuntimeException {

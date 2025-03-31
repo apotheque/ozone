@@ -1629,6 +1629,15 @@
   </property>
 
   <property>
+    <name>hdds.scm.background.pipeline.creator.enabled</name>
+    <value>true</value>
+    <tag>HDDS,SCM,OPERATION</tag>
+    <description>
+      Boolean value to enable background pipeline creator.
+    </description>
+  </property>
+
+  <property>
     <name>hdds.scm.safemode.healthy.pipeline.pct</name>
     <value>0.10</value>
     <tag>HDDS,SCM,OPERATION</tag>

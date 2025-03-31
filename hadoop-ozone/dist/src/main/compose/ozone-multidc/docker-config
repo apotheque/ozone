@@ -35,11 +35,13 @@ OZONE-SITE.XML_ozone.scm.address.scmservice.scm2=scm2
 OZONE-SITE.XML_ozone.scm.address.scmservice.scm3=scm3
 OZONE-SITE.XML_ozone.scm.ratis.enable=true
 OZONE-SITE.XML_ozone.scm.datanode.id.dir=/data
-OZONE-SITE.XML_ozone.scm.container.size=1GB
+OZONE-SITE.XML_ozone.scm.container.size=100MB
+OZONE-SITE.XML_ozone.scm.block.size=20MB
 OZONE-SITE.XML_ozone.scm.datanode.ratis.volume.free-space.min=10MB
 OZONE-SITE.XML_ozone.metadata.dirs=/data/metadata
 OZONE-SITE.XML_hdds.datanode.dir=/data/hdds
 OZONE-SITE.XML_hdds.datanode.volume.min.free.space=100MB
+OZONE-SITE.XML_hdds.datanode.du.refresh.period=5s
 OZONE-SITE.XML_ozone.datanode.pipeline.limit=1
 OZONE-SITE.XML_hdds.scmclient.max.retry.timeout=30s
 OZONE-SITE.XML_ozone.scm.primordial.node.id=scm1
@@ -51,13 +53,16 @@ OZONE-SITE.XML_ozone.recon.http-address=0.0.0.0:9888
 OZONE-SITE.XML_ozone.recon.https-address=0.0.0.0:9889
 OZONE-SITE.XML_hdds.container.ratis.datastream.enabled=true
 
-OZONE-SITE.XML_ozone.scm.dc.datanode.mapping=datanode1:9882=dc1,datanode2:9882=dc1,datanode3:9882=dc2,datanode4:9882=dc2,datanode5:9882=dc3,datanode6:9882=dc3
+OZONE-SITE.XML_ozone.scm.dc.datanode.mapping=10.5.0.2:9858=dc1,10.5.0.3:9858=dc1,10.5.0.4:9858=dc1,10.5.0.5:9858=dc1,10.5.0.6:9858=dc2,10.5.0.7:9858=dc2,10.5.0.8:9858=dc3,10.5.0.9:9858=dc3,10.5.0.10:9858=dc3
 OZONE-SITE.XML_ozone.replication.allowed-configs=^((STANDALONE|RATIS)/(ONE|THREE|SIX))|(EC/(3-2|6-3|10-4)-(512|1024|2048|4096)k)$
 OZONE-SITE.XML_net.topology.node.switch.mapping.impl=org.apache.hadoop.net.TableMapping
 OZONE-SITE.XML_net.topology.table.file.name=/opt/hadoop/compose/ozone-multidc/mapping
 OZONE-SITE.XML_ozone.scm.container.placement.impl=org.apache.hadoop.hdds.scm.container.placement.algorithms.SCMContainerPlacementRackAware
 OZONE-SITE.XML_ozone.network.topology.aware.read=true
 OZONE-SITE.XML_ozone.scm.network.topology.schema.file=/opt/hadoop/compose/ozone-multidc/network-topology-default.xml
+OZONE-SITE.XML_ozone.scm.pipeline.creation.auto.factor.one=false
+OZONE-SITE.XML_hdds.scm.safemode.pipeline-availability.check=false
+OZONE-SITE.XML_hdds.scm.background.pipeline.creator.enabled=false
 
 OZONE_CONF_DIR=/etc/hadoop
 OZONE_LOG_DIR=/var/log/hadoop

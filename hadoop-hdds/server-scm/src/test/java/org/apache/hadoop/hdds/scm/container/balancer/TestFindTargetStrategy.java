@@ -51,7 +51,7 @@ public class TestFindTargetStrategy {
   @Test
   public void testFindTargetGreedyByUsage() {
     FindTargetGreedyByUsageInfo findTargetStrategyByUsageInfo =
-        new FindTargetGreedyByUsageInfo(null, null, null);
+        new FindTargetGreedyByUsageInfo(null, null, null, null);
     List<DatanodeUsageInfo> overUtilizedDatanodes = new ArrayList<>();
 
     //create three datanodes with different usageinfo
@@ -111,7 +111,7 @@ public class TestFindTargetStrategy {
     MockNodeManager mockNodeManager = new MockNodeManager(potentialTargets);
 
     FindTargetGreedyByUsageInfo findTargetGreedyByUsageInfo =
-        new FindTargetGreedyByUsageInfo(null, null, mockNodeManager);
+        new FindTargetGreedyByUsageInfo(null, null, mockNodeManager, null);
     findTargetGreedyByUsageInfo.reInitialize(potentialTargets, null, null);
 
     // now, reset potential targets to only the first datanode
@@ -195,7 +195,7 @@ public class TestFindTargetStrategy {
 
     FindTargetGreedyByNetworkTopology findTargetGreedyByNetworkTopology =
         new FindTargetGreedyByNetworkTopology(
-            null, null, null, newCluster);
+            null, null, null, newCluster, null);
 
     findTargetGreedyByNetworkTopology.reInitialize(
         overUtilizedDatanodes, null, null);

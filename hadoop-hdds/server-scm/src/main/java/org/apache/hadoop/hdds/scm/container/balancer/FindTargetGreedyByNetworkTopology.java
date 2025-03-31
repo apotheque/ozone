@@ -19,6 +19,7 @@
 package org.apache.hadoop.hdds.scm.container.balancer;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.hadoop.hdds.conf.OzoneConfiguration;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
 import org.apache.hadoop.hdds.scm.PlacementPolicyValidateProxy;
 import org.apache.hadoop.hdds.scm.container.ContainerManager;
@@ -46,11 +47,12 @@ public class FindTargetGreedyByNetworkTopology
   private List potentialTargets;
 
   public FindTargetGreedyByNetworkTopology(
-      ContainerManager containerManager,
-      PlacementPolicyValidateProxy placementPolicyValidateProxy,
-      NodeManager nodeManager,
-      NetworkTopology networkTopology) {
-    super(containerManager, placementPolicyValidateProxy, nodeManager);
+          ContainerManager containerManager,
+          PlacementPolicyValidateProxy placementPolicyValidateProxy,
+          NodeManager nodeManager,
+          NetworkTopology networkTopology,
+          OzoneConfiguration ozoneConfiguration) {
+    super(containerManager, placementPolicyValidateProxy, nodeManager, ozoneConfiguration);
     setLogger(LoggerFactory.getLogger(FindTargetGreedyByNetworkTopology.class));
     potentialTargets = new LinkedList<>();
     setPotentialTargets(potentialTargets);

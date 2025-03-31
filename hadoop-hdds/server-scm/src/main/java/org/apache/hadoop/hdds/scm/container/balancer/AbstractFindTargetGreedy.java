@@ -19,9 +19,11 @@
 package org.apache.hadoop.hdds.scm.container.balancer;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.hadoop.hdds.conf.OzoneConfiguration;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
 import org.apache.hadoop.hdds.scm.ContainerPlacementStatus;
 import org.apache.hadoop.hdds.scm.PlacementPolicyValidateProxy;
+import org.apache.hadoop.hdds.scm.ScmUtils;
 import org.apache.hadoop.hdds.scm.container.ContainerID;
 import org.apache.hadoop.hdds.scm.container.ContainerInfo;
 import org.apache.hadoop.hdds.scm.container.ContainerManager;
@@ -35,6 +37,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -51,15 +54,18 @@ public abstract class AbstractFindTargetGreedy implements FindTargetStrategy {
   private ContainerBalancerConfiguration config;
   private Double upperLimit;
   private Collection<DatanodeUsageInfo> potentialTargets;
+  private OzoneConfiguration conf;
 
   protected AbstractFindTargetGreedy(
       ContainerManager containerManager,
       PlacementPolicyValidateProxy placementPolicyValidateProxy,
-      NodeManager nodeManager) {
+      NodeManager nodeManager,
+      OzoneConfiguration ozoneConfiguration) {
     sizeEnteringNode = new HashMap<>();
     this.containerManager = containerManager;
     this.placementPolicyValidateProxy = placementPolicyValidateProxy;
     this.nodeManager = nodeManager;
+    this.conf = ozoneConfiguration;
   }
 
   protected void setLogger(Logger log) {
@@ -88,8 +94,16 @@ public abstract class AbstractFindTargetGreedy implements FindTargetStrategy {
     return uuidA.compareTo(uuidB);
   }
 
-  private void setConfiguration(ContainerBalancerConfiguration conf) {
-    config = conf;
+  private void setConfiguration(ContainerBalancerConfiguration balancerConfiguration) {
+    config = balancerConfiguration;
+  }
+
+  private String getDCForDatanode(DatanodeDetails dn) {
+    return dn.getDc(ScmUtils.getDcMapping(conf));
+  }
+
+  private boolean isDcConfigured() {
+    return conf.get("ozone.scm.dc.datanode.mapping") != null;
   }
 
   /**
@@ -107,8 +121,17 @@ public abstract class AbstractFindTargetGreedy implements FindTargetStrategy {
   public ContainerMoveSelection findTargetForContainerMove(
       DatanodeDetails source, Set<ContainerID> candidateContainers) {
     sortTargetForSource(source);
+    String sourceDC = "";
+    String targetDC;
     for (DatanodeUsageInfo targetInfo : potentialTargets) {
       DatanodeDetails target = targetInfo.getDatanodeDetails();
+      if (isDcConfigured()) {
+        sourceDC = getDCForDatanode(source);
+        targetDC = getDCForDatanode(target);
+        if (!Objects.equals(targetDC, sourceDC)) {
+          continue;
+        }
+      }
       for (ContainerID container : candidateContainers) {
         Set<ContainerReplica> replicas;
         ContainerInfo containerInfo;
@@ -118,6 +141,10 @@ public abstract class AbstractFindTargetGreedy implements FindTargetStrategy {
         } catch (ContainerNotFoundException e) {
           logger.warn("Could not get Container {} from Container Manager for " +
               "obtaining replicas in Container Balancer.", container, e);
+          continue;
+        }
+
+        if (!containerInfo.getDatacenters().isEmpty() && !containerInfo.getDatacenters().contains(sourceDC)) {
           continue;
         }
 
@@ -240,9 +267,9 @@ public abstract class AbstractFindTargetGreedy implements FindTargetStrategy {
    */
   @Override
   public void reInitialize(List<DatanodeUsageInfo> potentialDataNodes,
-                           ContainerBalancerConfiguration conf,
+                           ContainerBalancerConfiguration balancerConfiguration,
                            Double upLimit) {
-    setConfiguration(conf);
+    setConfiguration(balancerConfiguration);
     setUpperLimit(upLimit);
     sizeEnteringNode.clear();
     resetTargets(potentialDataNodes);

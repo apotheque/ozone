@@ -27,7 +27,7 @@ x-common-config:
 
 x-replication:
   &replication
-  OZONE-SITE.XML_ozone.server.default.replication: 6
+  OZONE-SITE.XML_ozone.server.default.replication: ${OZONE_REPLICATION_FACTOR:-3}
 
 services:
   datanode1:
@@ -38,6 +38,9 @@ services:
     environment:
       <<: *replication
     command: ["ozone","datanode"]
+    volumes:
+      - tmpfs1:/data
+      - ../..:/opt/hadoop
     networks:
       ozone_net:
         ipv4_address: 10.5.0.2
@@ -49,6 +52,9 @@ services:
     environment:
       <<: *replication
     command: ["ozone","datanode"]
+    volumes:
+      - tmpfs2:/data
+      - ../..:/opt/hadoop
     networks:
       ozone_net:
         ipv4_address: 10.5.0.3
@@ -60,6 +66,9 @@ services:
     environment:
       <<: *replication
     command: ["ozone","datanode"]
+    volumes:
+      - tmpfs3:/data
+      - ../..:/opt/hadoop
     networks:
       ozone_net:
         ipv4_address: 10.5.0.4
@@ -71,6 +80,9 @@ services:
     environment:
       <<: *replication
     command: ["ozone","datanode"]
+    volumes:
+      - tmpfs4:/data
+      - ../..:/opt/hadoop
     networks:
       ozone_net:
         ipv4_address: 10.5.0.5
@@ -82,6 +94,9 @@ services:
     environment:
       <<: *replication
     command: ["ozone","datanode"]
+    volumes:
+      - tmpfs5:/data
+      - ../..:/opt/hadoop
     networks:
       ozone_net:
         ipv4_address: 10.5.0.6
@@ -93,9 +108,54 @@ services:
     environment:
       <<: *replication
     command: ["ozone","datanode"]
+    volumes:
+      - tmpfs6:/data
+      - ../..:/opt/hadoop
     networks:
       ozone_net:
         ipv4_address: 10.5.0.7
+  datanode7:
+   <<: *common-config
+   ports:
+     - "19864"
+     - "9882"
+   environment:
+     <<: *replication
+   command: ["ozone","datanode"]
+   volumes:
+     - tmpfs7:/data
+     - ../..:/opt/hadoop
+   networks:
+     ozone_net:
+       ipv4_address: 10.5.0.8
+  datanode8:
+   <<: *common-config
+   ports:
+     - "19864"
+     - "9882"
+   environment:
+     <<: *replication
+   command: ["ozone","datanode"]
+   volumes:
+     - tmpfs8:/data
+     - ../..:/opt/hadoop
+   networks:
+     ozone_net:
+       ipv4_address: 10.5.0.9
+  datanode9:
+   <<: *common-config
+   ports:
+     - "19864"
+     - "9882"
+   environment:
+     <<: *replication
+   command: ["ozone","datanode"]
+   volumes:
+     - tmpfs9:/data
+     - ../..:/opt/hadoop
+   networks:
+     ozone_net:
+       ipv4_address: 10.5.0.10
   om1:
     <<: *common-config
     environment:
@@ -109,7 +169,7 @@ services:
     command: ["ozone","om"]
     networks:
       ozone_net:
-        ipv4_address: 10.5.0.8
+        ipv4_address: 10.5.0.11
   om2:
     <<: *common-config
     environment:
@@ -123,7 +183,7 @@ services:
     command: ["ozone","om"]
     networks:
       ozone_net:
-        ipv4_address: 10.5.0.9
+        ipv4_address: 10.5.0.12
   om3:
     <<: *common-config
     environment:
@@ -137,7 +197,7 @@ services:
     command: ["ozone","om"]
     networks:
       ozone_net:
-        ipv4_address: 10.5.0.10
+        ipv4_address: 10.5.0.13
   scm1:
     <<: *common-config
     ports:
@@ -149,7 +209,7 @@ services:
     command: ["ozone","scm"]
     networks:
       ozone_net:
-        ipv4_address: 10.5.0.11
+        ipv4_address: 10.5.0.14
   scm2:
     <<: *common-config
     ports:
@@ -162,7 +222,7 @@ services:
     command: ["ozone","scm"]
     networks:
       ozone_net:
-        ipv4_address: 10.5.0.12
+        ipv4_address: 10.5.0.15
   scm3:
     <<: *common-config
     ports:
@@ -175,7 +235,7 @@ services:
     command: ["ozone","scm"]
     networks:
       ozone_net:
-        ipv4_address: 10.5.0.13
+        ipv4_address: 10.5.0.16
   httpfs:
     <<: *common-config
     environment:
@@ -186,7 +246,7 @@ services:
     command: [ "ozone","httpfs" ]
     networks:
       ozone_net:
-        ipv4_address: 10.5.0.14
+        ipv4_address: 10.5.0.17
   s3g:
     <<: *common-config
     environment:
@@ -196,7 +256,7 @@ services:
     command: ["ozone","s3g"]
     networks:
       ozone_net:
-        ipv4_address: 10.5.0.15
+        ipv4_address: 10.5.0.18
   recon:
     <<: *common-config
     ports:
@@ -206,8 +266,7 @@ services:
     command: ["ozone","recon"]
     networks:
       ozone_net:
-        ipv4_address: 10.5.0.16
-
+        ipv4_address: 10.5.0.19
 networks:
   ozone_net:
     driver: bridge
@@ -215,3 +274,58 @@ networks:
       config:
         - subnet: 10.5.0.0/16
           gateway: 10.5.0.1
+volumes:
+  tmpfs1:
+    driver: local
+    driver_opts:
+      o: "size=1g,uid=1000"
+      device: tmpfs
+      type: tmpfs
+  tmpfs2:
+    driver: local
+    driver_opts:
+      o: "size=1g,uid=2000"
+      device: tmpfs
+      type: tmpfs
+  tmpfs3:
+    driver: local
+    driver_opts:
+      o: "size=1g,uid=3000"
+      device: tmpfs
+      type: tmpfs
+  tmpfs4:
+    driver: local
+    driver_opts:
+      o: "size=1g,uid=4000"
+      device: tmpfs
+      type: tmpfs
+  tmpfs5:
+    driver: local
+    driver_opts:
+      o: "size=1g,uid=5000"
+      device: tmpfs
+      type: tmpfs
+  tmpfs6:
+    driver: local
+    driver_opts:
+      o: "size=1g,uid=6000"
+      device: tmpfs
+      type: tmpfs
+  tmpfs7:
+    driver: local
+    driver_opts:
+      o: "size=1g,uid=7000"
+      device: tmpfs
+      type: tmpfs
+  tmpfs8:
+    driver: local
+    driver_opts:
+      o: "size=1g,uid=8000"
+      device: tmpfs
+      type: tmpfs
+  tmpfs9:
+    driver: local
+    driver_opts:
+      o: "size=1g,uid=9000"
+      device: tmpfs
+      type: tmpfs

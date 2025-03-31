@@ -173,7 +173,7 @@ public class TestRatisOverReplicationHandler {
     ReplicationFactor replicationFactor = ReplicationFactor.THREE;
     conf.set(OZONE_REPLICATION, replicationFactor.toString());
     conf.set(OZONE_SCM_DC_DATANODE_MAPPING_KEY,
-        "localhost:0=dc0,localhost:1=dc0,localhost:2=dc1,localhost:3=dc1,localhost:4=dc2,localhost:5=dc2");
+        "null:0=dc0,null:1=dc0,null:2=dc1,null:3=dc1,null:4=dc2,null:5=dc2");
     Map<String, String> dcMapping = ScmUtils.getDcMapping(conf);
     container = ReplicationTestUtil.createContainer(
         HddsProtos.LifeCycleState.CLOSED, RatisReplicationConfig.getInstance(replicationFactor.toProto()),

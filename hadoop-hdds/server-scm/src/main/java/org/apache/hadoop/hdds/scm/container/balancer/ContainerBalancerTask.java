@@ -357,10 +357,10 @@ public class ContainerBalancerTask implements Runnable {
     if (config.getNetworkTopologyEnable()) {
       findTargetStrategy = new FindTargetGreedyByNetworkTopology(
           containerManager, placementPolicyValidateProxy,
-          nodeManager, networkTopology);
+          nodeManager, networkTopology, ozoneConfiguration);
     } else {
       findTargetStrategy = new FindTargetGreedyByUsageInfo(containerManager,
-          placementPolicyValidateProxy, nodeManager);
+          placementPolicyValidateProxy, nodeManager, ozoneConfiguration);
     }
     this.excludeNodes = config.getExcludeNodes();
     this.includeNodes = config.getIncludeNodes();
