@@ -81,6 +81,7 @@ message ScmContainerLocationRequest {
   optional TransferLeadershipRequestProto  transferScmLeadershipRequest = 42;
   optional GetFailedDeletedBlocksTxnRequestProto getFailedDeletedBlocksTxnRequest = 43;
   optional DecommissionScmRequestProto decommissionScmRequest = 44;
+  optional RestoreContainerReplicaRequestProto restoreContainerReplicaRequest = 45;
 }
 
 message ScmContainerLocationResponse {
@@ -133,6 +134,7 @@ message ScmContainerLocationResponse {
   optional TransferLeadershipResponseProto  transferScmLeadershipResponse = 42;
   optional GetFailedDeletedBlocksTxnResponseProto getFailedDeletedBlocksTxnResponse = 43;
   optional DecommissionScmResponseProto decommissionScmResponse = 44;
+  optional RestoreContainerReplicaResponseProto restoreContainerReplicaResponse = 45;
 
   enum Status {
     OK = 1;
@@ -184,6 +186,7 @@ enum Type {
   TransferLeadership = 38;
   GetFailedDeletedBlocksTransaction = 39;
   DecommissionScm = 40;
+  RestoreContainerReplica = 41;
 }
 
 /**
@@ -239,6 +242,16 @@ message GetContainerReplicasRequestProto {
 
 message GetContainerReplicasResponseProto {
   repeated SCMContainerReplicaProto containerReplica = 1;
+}
+
+message RestoreContainerReplicaRequestProto {
+  required int64 containerId = 1;
+  required string sourceId = 2;
+  required string targetId = 3;
+}
+
+message RestoreContainerReplicaResponseProto {
+  // Empty response
 }
 
 message GetContainerWithPipelineBatchRequestProto {
