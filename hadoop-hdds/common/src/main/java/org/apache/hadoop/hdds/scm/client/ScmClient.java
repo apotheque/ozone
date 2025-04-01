@@ -89,6 +89,7 @@ public interface ScmClient extends Closeable {
   /**
    * Restores a container replica on the specified target datanode using
    * the replica from the given source datanode.
+   *
    * @param containerId The ID of the container to be restored.
    * @param sourceId The ID of the source datanode containing the replica.
    * @param targetId The ID of the target datanode where the replica will be restored.

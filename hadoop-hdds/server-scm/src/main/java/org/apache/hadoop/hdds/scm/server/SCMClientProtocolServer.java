@@ -346,8 +346,7 @@ public class SCMClientProtocolServer implements
   }
 
   @Override
-  public void restoreContainerReplica(
-      long containerId, String sourceId, String targetId) throws IOException {
+  public void restoreContainerReplica(long containerId, String sourceId, String targetId) throws IOException {
     LOG.info("Requested manual restore of container {} at target datanode {} from source datanode {}.",
         containerId, targetId, sourceId);
     ContainerInfo container = getScm().getContainerManager().getContainer(ContainerID.valueOf(containerId));

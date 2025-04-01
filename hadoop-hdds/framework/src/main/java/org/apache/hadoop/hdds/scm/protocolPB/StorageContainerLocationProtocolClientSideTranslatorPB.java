@@ -297,8 +297,7 @@ public final class StorageContainerLocationProtocolClientSideTranslatorPB
   @Override
   public void restoreContainerReplica(long containerId, String sourceId, String targetId)
       throws IOException {
-    Preconditions.checkState(containerId >= 0,
-        "Container ID cannot be negative");
+    Preconditions.checkState(containerId >= 0, "Container ID cannot be negative");
 
     RestoreContainerReplicaRequestProto request =
         RestoreContainerReplicaRequestProto.newBuilder()

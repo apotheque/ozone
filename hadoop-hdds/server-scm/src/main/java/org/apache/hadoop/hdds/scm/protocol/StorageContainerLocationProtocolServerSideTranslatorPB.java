@@ -669,8 +669,8 @@ public final class StorageContainerLocationProtocolServerSideTranslatorPB
         return ScmContainerLocationResponse.newBuilder()
             .setCmdType(request.getCmdType())
             .setStatus(Status.OK)
-            .setRestoreContainerReplicaResponse(restoreContainerReplica(
-                request.getRestoreContainerReplicaRequest()))
+            .setRestoreContainerReplicaResponse(
+                restoreContainerReplica(request.getRestoreContainerReplicaRequest()))
             .build();
       case GetFailedDeletedBlocksTransaction:
         return ScmContainerLocationResponse.newBuilder()
