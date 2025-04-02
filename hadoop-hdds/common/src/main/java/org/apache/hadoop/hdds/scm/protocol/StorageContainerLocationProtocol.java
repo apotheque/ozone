@@ -109,6 +109,17 @@ public interface StorageContainerLocationProtocol extends Closeable {
       long containerId, int clientVersion) throws IOException;
 
   /**
+   * Restores a container replica on the specified target datanode
+   * using the replica from the given source datanode.
+   *
+   * @param containerId The ID of the container to be restored.
+   * @param sourceId The UUID of the source datanode containing the replica.
+   * @param targetId The UUID of the target datanode where the replica will be restored.
+   * @throws IOException If an error occurs during the restoration process.
+   */
+  void restoreContainerReplica(long containerId, String sourceId, String targetId) throws IOException;
+
+  /**
    * Ask SCM the location of a batch of containers. SCM responds with a group of
    * nodes where these containers and their replicas are located.
    *

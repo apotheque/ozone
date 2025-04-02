@@ -82,6 +82,8 @@ import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolPro
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.ReplicationManagerReportResponseProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.ReplicationManagerStatusRequestProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.ReplicationManagerStatusResponseProto;
+import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.RestoreContainerReplicaRequestProto;
+import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.RestoreContainerReplicaResponseProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.SCMCloseContainerRequestProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.SCMCloseContainerResponseProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.SCMDeleteContainerRequestProto;
@@ -663,6 +665,13 @@ public final class StorageContainerLocationProtocolServerSideTranslatorPB
               request.getGetContainerReplicasRequest(),
               request.getVersion()))
           .build();
+      case RestoreContainerReplica:
+        return ScmContainerLocationResponse.newBuilder()
+            .setCmdType(request.getCmdType())
+            .setStatus(Status.OK)
+            .setRestoreContainerReplicaResponse(
+                restoreContainerReplica(request.getRestoreContainerReplicaRequest()))
+            .build();
       case GetFailedDeletedBlocksTransaction:
         return ScmContainerLocationResponse.newBuilder()
             .setCmdType(request.getCmdType())
@@ -712,6 +721,13 @@ public final class StorageContainerLocationProtocolServerSideTranslatorPB
         = impl.getContainerReplicas(request.getContainerID(), clientVersion);
     return GetContainerReplicasResponseProto.newBuilder()
         .addAllContainerReplica(replicas).build();
+  }
+
+  public RestoreContainerReplicaResponseProto restoreContainerReplica(
+      RestoreContainerReplicaRequestProto request)
+      throws IOException {
+    impl.restoreContainerReplica(request.getContainerId(), request.getSourceId(), request.getTargetId());
+    return RestoreContainerReplicaResponseProto.newBuilder().build();
   }
 
   public ContainerResponseProto allocateContainer(ContainerRequestProto request,

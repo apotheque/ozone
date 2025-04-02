@@ -45,6 +45,7 @@ import org.apache.hadoop.hdds.protocolPB.ReconfigureProtocolServerSideTranslator
 import org.apache.hadoop.hdds.ratis.RatisHelper;
 import org.apache.hadoop.hdds.scm.DatanodeAdminError;
 import org.apache.hadoop.hdds.scm.ScmInfo;
+import org.apache.hadoop.hdds.scm.ScmUtils;
 import org.apache.hadoop.hdds.scm.container.ContainerID;
 import org.apache.hadoop.hdds.scm.container.ContainerInfo;
 import org.apache.hadoop.hdds.scm.container.ContainerNotFoundException;
@@ -63,6 +64,7 @@ import org.apache.hadoop.hdds.scm.ha.SCMHAUtils;
 import org.apache.hadoop.hdds.scm.ha.SCMRatisServer;
 import org.apache.hadoop.hdds.scm.ha.SCMRatisServerImpl;
 import org.apache.hadoop.hdds.scm.node.DatanodeUsageInfo;
+import org.apache.hadoop.hdds.scm.node.NodeManager;
 import org.apache.hadoop.hdds.scm.node.NodeStatus;
 import org.apache.hadoop.hdds.scm.node.states.NodeNotFoundException;
 import org.apache.hadoop.hdds.scm.pipeline.Pipeline;
@@ -87,6 +89,7 @@ import org.apache.hadoop.ozone.audit.AuditLoggerType;
 import org.apache.hadoop.ozone.audit.AuditMessage;
 import org.apache.hadoop.ozone.audit.Auditor;
 import org.apache.hadoop.ozone.audit.SCMAction;
+import org.apache.hadoop.ozone.protocol.commands.ReplicateContainerCommand;
 import org.apache.hadoop.ozone.upgrade.UpgradeFinalizer.StatusAndMessages;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
@@ -134,6 +137,7 @@ public class SCMClientProtocolServer implements
   private final StorageContainerManager scm;
   private final OzoneConfiguration config;
   private final ProtocolMessageMetrics<ProtocolMessageEnum> protocolMetrics;
+  private final Map<String, String> dcMapping;
 
   public SCMClientProtocolServer(OzoneConfiguration conf,
       StorageContainerManager scm,
@@ -186,6 +190,8 @@ public class SCMClientProtocolServer implements
       clientRpcServer.refreshServiceAcl(conf, SCMPolicyProvider.getInstance());
     }
     HddsServerUtil.addSuppressedLoggingExceptions(clientRpcServer);
+
+    this.dcMapping = ScmUtils.getDcMapping(conf);
   }
 
   public RPC.Server getClientRpcServer() {
@@ -337,6 +343,36 @@ public class SCMClientProtocolServer implements
       );
     }
     return results;
+  }
+
+  @Override
+  public void restoreContainerReplica(long containerId, String sourceId, String targetId) throws IOException {
+    LOG.info("Requested manual restore of container {} at target datanode {} from source datanode {}.",
+        containerId, targetId, sourceId);
+    ContainerInfo container = getScm().getContainerManager().getContainer(ContainerID.valueOf(containerId));
+    NodeManager scmNodeManager = getScm().getScmNodeManager();
+    DatanodeDetails sourceNode = scmNodeManager.getNodeByUuid(sourceId);
+    DatanodeDetails targetNode = scmNodeManager.getNodeByUuid(targetId);
+
+    Set<String> containerDcs = container.getDatacenters();
+    String targetDc = targetNode.getDc(dcMapping);
+    if (!containerDcs.isEmpty() && !containerDcs.contains(targetDc)) {
+      String msg = String.format("Can't restore container %s to the target datanode %s located in datacenter %s. " +
+          "Allowed datacenters for this container: %s",
+          containerId, targetId, targetDc, String.join(",", containerDcs));
+      throw new SCMException(msg, ResultCodes.CONTAINER_RESTORE_DISALLOWED_DATACENTER);
+    }
+
+    ReplicateContainerCommand command = ReplicateContainerCommand.fromSources(
+        containerId, Collections.singletonList(sourceNode));
+
+    final boolean push = getScm().getReplicationManager().getConfig().isPush();
+    if (push) {
+      getScm().getReplicationManager().sendThrottledReplicationCommand(
+          container, Collections.singletonList(sourceNode), targetNode, 0);
+    } else {
+      getScm().getReplicationManager().sendDatanodeCommand(command, container, targetNode);
+    }
   }
 
   @Override

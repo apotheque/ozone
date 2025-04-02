@@ -639,8 +639,12 @@ public class MockNodeManager implements NodeManager {
 
   @Override
   public Map<SCMCommandProto.Type, Integer> getTotalDatanodeCommandCounts(
-      DatanodeDetails datanodeDetails, SCMCommandProto.Type... cmdType) {
-    return Collections.emptyMap();
+      DatanodeDetails datanodeDetails, SCMCommandProto.Type... cmdType) throws NodeNotFoundException {
+    Map<SCMCommandProto.Type, Integer> counts = new HashMap<>();
+    for (SCMCommandProto.Type type : cmdType) {
+      counts.put(type, getTotalDatanodeCommandCount(datanodeDetails, type));
+    }
+    return counts;
   }
 
   /**
@@ -866,7 +870,7 @@ public class MockNodeManager implements NodeManager {
 
   @Override
   public List<SCMCommand> getCommandQueue(UUID dnID) {
-    return null;
+    return commandMap.get(dnID);
   }
 
   @Override

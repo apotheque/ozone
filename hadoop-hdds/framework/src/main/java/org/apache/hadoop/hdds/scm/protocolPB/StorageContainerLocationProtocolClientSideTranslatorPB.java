@@ -77,6 +77,7 @@ import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolPro
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.ReplicationManagerReportResponseProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.ReplicationManagerStatusRequestProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.ReplicationManagerStatusResponseProto;
+import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.RestoreContainerReplicaRequestProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.ContainerBalancerStatusRequestProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.ContainerBalancerStatusResponseProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.SCMCloseContainerRequestProto;
@@ -288,6 +289,25 @@ public final class StorageContainerLocationProtocolClientSideTranslatorPB
         submitRequest(Type.GetContainerReplicas,
             (builder) -> builder.setGetContainerReplicasRequest(request));
     return response.getGetContainerReplicasResponse().getContainerReplicaList();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public void restoreContainerReplica(long containerId, String sourceId, String targetId)
+      throws IOException {
+    Preconditions.checkState(containerId >= 0, "Container ID cannot be negative");
+
+    RestoreContainerReplicaRequestProto request =
+        RestoreContainerReplicaRequestProto.newBuilder()
+            .setContainerId(containerId)
+            .setSourceId(sourceId)
+            .setTargetId(targetId)
+            .build();
+
+    submitRequest(Type.RestoreContainerReplica,
+        builder -> builder.setRestoreContainerReplicaRequest(request));
   }
 
   /**

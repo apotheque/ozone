@@ -415,6 +415,12 @@ public class ContainerOperationClient implements ScmClient {
   }
 
   @Override
+  public void restoreContainerReplica(long containerId, String sourceId, String targetId)
+      throws IOException {
+    storageContainerLocationClient.restoreContainerReplica(containerId, sourceId, targetId);
+  }
+
+  @Override
   public void closeContainer(long containerId)
       throws IOException {
     if (LOG.isDebugEnabled()) {

@@ -87,6 +87,17 @@ public interface ScmClient extends Closeable {
       long containerId) throws IOException;
 
   /**
+   * Restores a container replica on the specified target datanode using
+   * the replica from the given source datanode.
+   *
+   * @param containerId The ID of the container to be restored.
+   * @param sourceId The ID of the source datanode containing the replica.
+   * @param targetId The ID of the target datanode where the replica will be restored.
+   * @throws IOException If an error occurs during the restoration process.
+   */
+  void restoreContainerReplica(long containerId, String sourceId, String targetId) throws IOException;
+
+  /**
    * Close a container.
    *
    * @param containerId - ID of the container.
