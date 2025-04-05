@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.Set;
 
 import org.apache.hadoop.hdds.client.ECReplicationConfig;
 import org.apache.hadoop.hdds.client.RatisReplicationConfig;
@@ -74,6 +75,23 @@ public final class MockPipeline {
             StandaloneReplicationConfig.getInstance(ReplicationFactor.ONE))
         .setNodes(dns)
         .setDatacenters(Collections.emptySet())
+        .build();
+  }
+
+  public static Pipeline createPipelineWithDc(Set<String> datacenters) {
+    List<DatanodeDetails> nodes = new ArrayList<>();
+    nodes.add(MockDatanodeDetails.randomDatanodeDetails());
+    nodes.add(MockDatanodeDetails.randomDatanodeDetails());
+    nodes.add(MockDatanodeDetails.randomDatanodeDetails());
+
+    return Pipeline.newBuilder()
+        .setState(Pipeline.PipelineState.OPEN)
+        .setId(PipelineID.randomId())
+        .setReplicationConfig(
+            RatisReplicationConfig.getInstance(ReplicationFactor.THREE))
+        .setNodes(nodes)
+        .setDatacenters(datacenters)
+        .setLeaderId(UUID.randomUUID())
         .build();
   }
 

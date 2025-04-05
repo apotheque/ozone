@@ -22,6 +22,8 @@ import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
 
 import static org.apache.hadoop.hdds.protocol.DatanodeDetails.Port.Name.ALL_PORTS;
 import static org.apache.hadoop.hdds.protocol.DatanodeDetails.Port.Name.V0_PORTS;
@@ -29,6 +31,7 @@ import static org.apache.hadoop.hdds.protocol.TestDatanodeDetails.assertPorts;
 import static org.apache.hadoop.ozone.ClientVersion.DEFAULT_VERSION;
 import static org.apache.hadoop.ozone.ClientVersion.VERSION_HANDLES_UNKNOWN_DN_PORTS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -111,5 +114,11 @@ public class TestPipeline {
       assertEquals(original.getReplicaIndex(dn),
           copied.getReplicaIndex(dn));
     }
+  }
+
+  @Test
+  public void testGetClosestNodeThrowsWithDCAndEmptyNodesInOrder() {
+    Pipeline pipeline = MockPipeline.createPipelineWithDc(new HashSet<>(Arrays.asList("dc1", "dc2", "dc3")));
+    assertThrows(IOException.class, pipeline::getClosestNode);
   }
 }
