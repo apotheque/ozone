@@ -614,6 +614,10 @@ public class MiniOzoneClusterImpl implements MiniOzoneCluster {
         hddsDatanodes = createHddsDatanodes(
             Collections.singletonList(scm), reconServer);
 
+        if (datanodesCreatedCallback != null) {
+          datanodesCreatedCallback.onDatanodesCreated(hddsDatanodes, conf);
+        }
+
         MiniOzoneClusterImpl cluster = new MiniOzoneClusterImpl(conf,
             scmConfigurator, om, scm,
             hddsDatanodes, reconServer);

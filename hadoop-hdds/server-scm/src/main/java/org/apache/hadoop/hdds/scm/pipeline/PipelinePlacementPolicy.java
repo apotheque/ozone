@@ -61,7 +61,6 @@ public final class PipelinePlacementPolicy extends SCMCommonPlacementPolicy {
   private final ConfigurationSource conf;
   private final int heavyNodeCriteria;
   private static final int REQUIRED_RACKS = 2;
-  private final Map<String, String> dcMapping;
 
   public static final String MULTIPLE_RACK_PIPELINE_MSG =
       "The cluster has multiple racks, but all nodes with available " +
@@ -85,7 +84,6 @@ public final class PipelinePlacementPolicy extends SCMCommonPlacementPolicy {
     this.stateManager = stateManager;
     String dnLimit = conf.get(ScmConfigKeys.OZONE_DATANODE_PIPELINE_LIMIT);
     this.heavyNodeCriteria = dnLimit == null ? 0 : Integer.parseInt(dnLimit);
-    this.dcMapping = ScmUtils.getDcMapping(conf);
   }
 
   public static int currentRatisThreePipelineCount(
@@ -319,7 +317,8 @@ public final class PipelinePlacementPolicy extends SCMCommonPlacementPolicy {
     Map<String, List<DatanodeDetails>> nodesPerDatacenter = datacenters.stream()
         .collect(Collectors.toMap(dc -> dc, dc -> new ArrayList<>()));
     for (DatanodeDetails node : healthyNodes) {
-      String nodeDc = node.getDc(dcMapping);
+      Map<String, String> dcMap = ScmUtils.getDcMapping(conf);
+      String nodeDc = node.getDc(dcMap);
       if (nodesPerDatacenter.containsKey(nodeDc) && nodesPerDatacenter.get(nodeDc).size() < nodesRequiredPerDc) {
         nodesPerDatacenter.get(nodeDc).add(node);
       }
