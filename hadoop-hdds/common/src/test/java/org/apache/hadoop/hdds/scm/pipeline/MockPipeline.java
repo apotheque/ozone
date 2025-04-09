@@ -78,7 +78,7 @@ public final class MockPipeline {
         .build();
   }
 
-  public static Pipeline createPipelineWithDc(Set<String> datacenters) {
+  public static Pipeline createPipelineWithDc(Set<String> datacenters, boolean allowCrossDc) {
     List<DatanodeDetails> nodes = new ArrayList<>();
     nodes.add(MockDatanodeDetails.randomDatanodeDetails());
     nodes.add(MockDatanodeDetails.randomDatanodeDetails());
@@ -92,6 +92,7 @@ public final class MockPipeline {
         .setNodes(nodes)
         .setDatacenters(datacenters)
         .setLeaderId(UUID.randomUUID())
+        .setAllowCrossDc(allowCrossDc)
         .build();
   }
 
