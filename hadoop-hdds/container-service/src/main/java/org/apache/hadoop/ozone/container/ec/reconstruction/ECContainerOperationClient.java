@@ -47,6 +47,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import static org.apache.hadoop.ozone.OzoneConfigKeys.OZONE_CLIENT_ALLOW_CROSS_DC;
+import static org.apache.hadoop.ozone.OzoneConfigKeys.OZONE_CLIENT_ALLOW_CROSS_DC_DEFAULT;
+
 /**
  * This class wraps necessary container-level rpc calls
  * during ec offline reconstruction.
@@ -57,14 +60,16 @@ public class ECContainerOperationClient implements Closeable {
   private static final Logger LOG =
       LoggerFactory.getLogger(ECContainerOperationClient.class);
   private final XceiverClientManager xceiverClientManager;
+  private final ConfigurationSource config;
 
-  public ECContainerOperationClient(XceiverClientManager clientManager) {
+  public ECContainerOperationClient(XceiverClientManager clientManager, ConfigurationSource config) {
     this.xceiverClientManager = clientManager;
+    this.config = config;
   }
 
   public ECContainerOperationClient(ConfigurationSource conf,
       CertificateClient certificateClient) throws IOException {
-    this(createClientManager(conf, certificateClient));
+    this(createClientManager(conf, certificateClient), conf);
   }
 
   @NotNull
@@ -191,7 +196,9 @@ public class ECContainerOperationClient implements Closeable {
     return Pipeline.newBuilder().setId(PipelineID.valueOf(dn.getUuid()))
             .setReplicationConfig(repConfig).setNodes(ImmutableList.of(dn))
             .setState(Pipeline.PipelineState.CLOSED)
-            .setReplicaIndexes(new SingletonMap(dn, replicaIndex)).build();
+            .setReplicaIndexes(new SingletonMap(dn, replicaIndex))
+            .setAllowCrossDc(config.getBoolean(OZONE_CLIENT_ALLOW_CROSS_DC, OZONE_CLIENT_ALLOW_CROSS_DC_DEFAULT))
+            .build();
   }
 
   public XceiverClientManager getXceiverClientManager() {

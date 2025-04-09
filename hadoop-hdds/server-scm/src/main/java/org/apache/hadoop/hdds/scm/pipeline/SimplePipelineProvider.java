@@ -19,6 +19,7 @@
 package org.apache.hadoop.hdds.scm.pipeline;
 
 import org.apache.hadoop.hdds.client.StandaloneReplicationConfig;
+import org.apache.hadoop.hdds.conf.ConfigurationSource;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
 import org.apache.hadoop.hdds.scm.container.ContainerReplica;
 import org.apache.hadoop.hdds.scm.node.NodeManager;
@@ -30,15 +31,21 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.apache.hadoop.ozone.OzoneConfigKeys.OZONE_CLIENT_ALLOW_CROSS_DC;
+import static org.apache.hadoop.ozone.OzoneConfigKeys.OZONE_CLIENT_ALLOW_CROSS_DC_DEFAULT;
+
 /**
  * Implements Api for creating stand alone pipelines.
  */
 public class SimplePipelineProvider
     extends PipelineProvider<StandaloneReplicationConfig> {
 
+  private final boolean allowCrossDc;
+
   public SimplePipelineProvider(NodeManager nodeManager,
-      PipelineStateManager stateManager) {
+      PipelineStateManager stateManager, ConfigurationSource conf) {
     super(nodeManager, stateManager);
+    this.allowCrossDc = conf.getBoolean(OZONE_CLIENT_ALLOW_CROSS_DC, OZONE_CLIENT_ALLOW_CROSS_DC_DEFAULT);
   }
 
   @Override
@@ -69,6 +76,7 @@ public class SimplePipelineProvider
         .setReplicationConfig(replicationConfig)
         .setNodes(dns.subList(0,
             replicationConfig.getReplicationFactor().getNumber()))
+        .setAllowCrossDc(allowCrossDc)
         .build();
   }
 

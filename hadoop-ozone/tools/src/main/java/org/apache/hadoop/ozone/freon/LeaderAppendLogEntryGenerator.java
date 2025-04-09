@@ -68,6 +68,9 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
+import static org.apache.hadoop.ozone.OzoneConfigKeys.OZONE_CLIENT_ALLOW_CROSS_DC;
+import static org.apache.hadoop.ozone.OzoneConfigKeys.OZONE_CLIENT_ALLOW_CROSS_DC_DEFAULT;
+
 /**
  * Test isolated LEADER datanodes.
  * <p>
@@ -196,6 +199,7 @@ public class LeaderAppendLogEntryGenerator extends BaseAppendLogGenerator
             RatisReplicationConfig.getInstance(ReplicationFactor.THREE))
         .setLeaderId(UUID.fromString(serverId))
         .setNodes(datanodes)
+        .setAllowCrossDc(conf.getBoolean(OZONE_CLIENT_ALLOW_CROSS_DC, OZONE_CLIENT_ALLOW_CROSS_DC_DEFAULT))
         .build();
 
     return XceiverClientRatis

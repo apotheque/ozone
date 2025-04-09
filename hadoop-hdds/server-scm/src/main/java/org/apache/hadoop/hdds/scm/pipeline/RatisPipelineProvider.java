@@ -51,6 +51,9 @@ import org.apache.ratis.protocol.exceptions.NotLeaderException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.hadoop.ozone.OzoneConfigKeys.OZONE_CLIENT_ALLOW_CROSS_DC;
+import static org.apache.hadoop.ozone.OzoneConfigKeys.OZONE_CLIENT_ALLOW_CROSS_DC_DEFAULT;
+
 /**
  * Implements Api for creating ratis pipelines.
  */
@@ -196,6 +199,7 @@ public class RatisPipelineProvider
         .setSuggestedLeaderId(
             suggestedLeader != null ? suggestedLeader.getUuid() : null)
         .setDatacenters(datacenters)
+        .setAllowCrossDc(conf.getBoolean(OZONE_CLIENT_ALLOW_CROSS_DC, OZONE_CLIENT_ALLOW_CROSS_DC_DEFAULT))
         .build();
 
     // Send command to datanodes to create pipeline
@@ -225,6 +229,7 @@ public class RatisPipelineProvider
         .setState(PipelineState.ALLOCATED)
         .setReplicationConfig(replicationConfig)
         .setNodes(nodes)
+        .setAllowCrossDc(conf.getBoolean(OZONE_CLIENT_ALLOW_CROSS_DC, OZONE_CLIENT_ALLOW_CROSS_DC_DEFAULT))
         .build();
   }
 

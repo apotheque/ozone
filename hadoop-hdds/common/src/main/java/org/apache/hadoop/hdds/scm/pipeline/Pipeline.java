@@ -96,6 +96,8 @@ public final class Pipeline {
 
   private final Set<String> datacenters;
 
+  private final boolean allowCrossDc;
+
   /**
    * The immutable properties of pipeline object is used in
    * ContainerStateManager#getMatchingContainerByPipeline to take a lock on
@@ -122,6 +124,7 @@ public final class Pipeline {
     creationTimestamp = b.creationTimestamp != null ? b.creationTimestamp : Instant.now();
     stateEnterTime = Instant.now();
     datacenters = b.datacenters;
+    allowCrossDc = b.allowCrossDc;
   }
 
   /**
@@ -309,7 +312,7 @@ public final class Pipeline {
     }
     // if no nodes left and pipeline is not bound to any datacenter, delegate to getFirstNode
     // otherwise, nodesInOrder is empty due to topology filtering for cross-DC read, which we restrict
-    if (nodesInOrder.isEmpty() && getDatacenters().isEmpty()) {
+    if (nodesInOrder.isEmpty() && getDatacenters().isEmpty() || allowCrossDc) {
       LOG.debug("Nodes in order is empty, no datacenter restrictions, delegate to getFirstNode");
       return getFirstNode(excluded);
     }
@@ -390,7 +393,8 @@ public final class Pipeline {
         .setCreationTimeStamp(creationTimestamp.toEpochMilli())
         .addAllMembers(members)
         .addAllMemberReplicaIndexes(memberReplicaIndexes)
-        .addAllDatacenters(datacenters);
+        .addAllDatacenters(datacenters)
+        .setAllowCrossDc(allowCrossDc);
 
     if (replicationConfig instanceof ECReplicationConfig) {
       builder.setEcReplicationConfig(((ECReplicationConfig) replicationConfig)
@@ -491,7 +495,8 @@ public final class Pipeline {
         .setSuggestedLeaderId(suggestedLeaderId)
         .setNodeOrder(pipeline.getMemberOrdersList())
         .setCreateTimestamp(pipeline.getCreationTimeStamp())
-        .setDatacenters(new HashSet<>(pipeline.getDatacentersList()));
+        .setDatacenters(new HashSet<>(pipeline.getDatacentersList()))
+        .setAllowCrossDc(pipeline.getAllowCrossDc());
   }
 
   public static Pipeline getFromProtobuf(HddsProtos.Pipeline pipeline)
@@ -568,6 +573,7 @@ public final class Pipeline {
     private UUID suggestedLeaderId = null;
     private Map<DatanodeDetails, Integer> replicaIndexes;
     private Set<String> datacenters = new HashSet<>();
+    private boolean allowCrossDc = true;
 
     public Builder() { }
 
@@ -581,6 +587,7 @@ public final class Pipeline {
       this.creationTimestamp = pipeline.getCreationTimestamp();
       this.suggestedLeaderId = pipeline.getSuggestedLeaderId();
       this.datacenters = pipeline.getDatacenters();
+      this.allowCrossDc = pipeline.allowCrossDc;
       if (nodeStatus != null) {
         replicaIndexes = new HashMap<>();
         for (DatanodeDetails dn : nodeStatus.keySet()) {
@@ -651,6 +658,11 @@ public final class Pipeline {
 
     public Builder setDatacenters(Set<String> datacenters) {
       this.datacenters = datacenters;
+      return this;
+    }
+
+    public Builder setAllowCrossDc(boolean allowCrossDc) {
+      this.allowCrossDc = allowCrossDc;
       return this;
     }
 

@@ -116,6 +116,7 @@ public class ECReconstructionCoordinator implements Closeable {
   private final ECReconstructionMetrics metrics;
   private final StateContext context;
   private final OzoneClientConfig ozoneClientConfig;
+  private final boolean allowCrossDc;
 
   public ECReconstructionCoordinator(
       ConfigurationSource conf, CertificateClient certificateClient,
@@ -136,6 +137,7 @@ public class ECReconstructionCoordinator implements Closeable {
             EC_RECONSTRUCT_STRIPE_WRITE_POOL_MIN_SIZE,
             ozoneClientConfig.getEcReconstructStripeWritePoolLimit(),
             threadNamePrefix + "ec-reconstruct-writer-TID-%d"));
+    this.allowCrossDc = ozoneClientConfig.allowCrossDc();
     this.blockInputStreamFactory = BlockInputStreamFactoryImpl
         .getInstance(byteBufferPool, () -> ecReconstructReadExecutor);
     tokenHelper = new TokenHelper(new SecurityConfig(conf), secretKeyClient);
@@ -486,6 +488,7 @@ public class ECReconstructionCoordinator implements Closeable {
     return Pipeline.newBuilder().setId(PipelineID.randomId())
         .setReplicationConfig(repConfig).setNodes(nodes)
         .setReplicaIndexes(dnVsIndex).setState(Pipeline.PipelineState.CLOSED)
+        .setAllowCrossDc(allowCrossDc)
         .build();
   }
 

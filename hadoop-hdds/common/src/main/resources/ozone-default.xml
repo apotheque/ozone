@@ -4370,4 +4370,15 @@
       enabling more efficient storage management and data placement across data centers.
     </description>
   </property>
+
+  <property>
+    <name>ozone.client.allow-cross-dc</name>
+    <value>true</value>
+    <tag>CLIENT</tag>
+    <description>
+      When enabled, this property allows clients to perform read and write operations against a bucket
+      even if they are located outside the datacenter(s) associated with that bucket.
+      This does not affect container placement or replication decisions.
+    </description>
+  </property>
 </configuration>

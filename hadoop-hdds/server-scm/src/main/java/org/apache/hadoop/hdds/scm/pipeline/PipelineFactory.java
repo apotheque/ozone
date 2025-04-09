@@ -51,7 +51,7 @@ public class PipelineFactory {
                   SCMContext scmContext) {
     providers = new HashMap<>();
     providers.put(ReplicationType.STAND_ALONE,
-        new SimplePipelineProvider(nodeManager, stateManager));
+        new SimplePipelineProvider(nodeManager, stateManager, conf));
     providers.put(ReplicationType.RATIS,
         new RatisPipelineProvider(nodeManager,
             stateManager, conf,
