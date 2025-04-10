@@ -312,7 +312,7 @@ public final class Pipeline {
     }
     // if no nodes left and pipeline is not bound to any datacenter, delegate to getFirstNode
     // otherwise, nodesInOrder is empty due to topology filtering for cross-DC read, which we restrict
-    if (nodesInOrder.isEmpty() && getDatacenters().isEmpty() || allowCrossDc) {
+    if (nodesInOrder.isEmpty() && (getDatacenters().isEmpty() || allowCrossDc)) {
       LOG.debug("Nodes in order is empty, no datacenter restrictions, delegate to getFirstNode");
       return getFirstNode(excluded);
     }
