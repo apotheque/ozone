@@ -117,7 +117,7 @@ public class TestPipeline {
   }
 
   @Test
-  public void testGetClosestNodeThrowsWithDCAndEmptyNodesInOrder() {
+  public void testGetClosestNodeThrowsIOExceptionWithDCAndEmptyNodesInOrder() {
     Pipeline pipeline = MockPipeline.createPipelineWithDc(new HashSet<>(Arrays.asList("dc1", "dc2", "dc3")), false);
     assertThrows(IOException.class, pipeline::getClosestNode);
   }
