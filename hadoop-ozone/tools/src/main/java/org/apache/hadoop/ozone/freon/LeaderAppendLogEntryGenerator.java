@@ -68,8 +68,8 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-import static org.apache.hadoop.ozone.OzoneConfigKeys.OZONE_CLIENT_ALLOW_CROSS_DC;
-import static org.apache.hadoop.ozone.OzoneConfigKeys.OZONE_CLIENT_ALLOW_CROSS_DC_DEFAULT;
+import static org.apache.hadoop.ozone.OzoneConfigKeys.OZONE_CLIENT_CROSS_DC_READ_ALLOW;
+import static org.apache.hadoop.ozone.OzoneConfigKeys.OZONE_CLIENT_CROSS_DC_READ_ALLOW_DEFAULT;
 
 /**
  * Test isolated LEADER datanodes.
@@ -199,7 +199,7 @@ public class LeaderAppendLogEntryGenerator extends BaseAppendLogGenerator
             RatisReplicationConfig.getInstance(ReplicationFactor.THREE))
         .setLeaderId(UUID.fromString(serverId))
         .setNodes(datanodes)
-        .setAllowCrossDc(conf.getBoolean(OZONE_CLIENT_ALLOW_CROSS_DC, OZONE_CLIENT_ALLOW_CROSS_DC_DEFAULT))
+        .setAllowCrossDcRead(conf.getBoolean(OZONE_CLIENT_CROSS_DC_READ_ALLOW, OZONE_CLIENT_CROSS_DC_READ_ALLOW_DEFAULT))
         .build();
 
     return XceiverClientRatis

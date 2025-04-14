@@ -4372,11 +4372,11 @@
   </property>
 
   <property>
-    <name>ozone.client.allow-cross-dc</name>
+    <name>ozone.client.crossdc.read.allow</name>
     <value>true</value>
     <tag>CLIENT</tag>
     <description>
-      When enabled, this property allows clients to perform read and write operations against a bucket
+      When enabled, this property allows clients to perform read operations against a bucket
       even if they are located outside the datacenter(s) associated with that bucket.
       This does not affect container placement or replication decisions.
     </description>

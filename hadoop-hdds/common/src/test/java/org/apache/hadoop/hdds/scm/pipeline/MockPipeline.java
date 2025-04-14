@@ -92,7 +92,7 @@ public final class MockPipeline {
         .setNodes(nodes)
         .setDatacenters(datacenters)
         .setLeaderId(UUID.randomUUID())
-        .setAllowCrossDc(allowCrossDc)
+        .setAllowCrossDcRead(allowCrossDc)
         .build();
   }
 

@@ -680,10 +680,10 @@ public final class OzoneConfigKeys {
 
   public static final String OZONE_S3G_KEY_INFO_CACHE_IDLE_LIFETIME_DEFAULT = "120s";
 
-  public static final String OZONE_CLIENT_ALLOW_CROSS_DC =
-      "ozone.client.allow-cross-dc";
+  public static final String OZONE_CLIENT_CROSS_DC_READ_ALLOW =
+      "ozone.client.crossdc.read.allow";
 
-  public static final boolean OZONE_CLIENT_ALLOW_CROSS_DC_DEFAULT =
+  public static final boolean OZONE_CLIENT_CROSS_DC_READ_ALLOW_DEFAULT =
       true;
 
   /**

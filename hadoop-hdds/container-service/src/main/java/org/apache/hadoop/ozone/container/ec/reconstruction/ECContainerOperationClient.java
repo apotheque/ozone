@@ -47,8 +47,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import static org.apache.hadoop.ozone.OzoneConfigKeys.OZONE_CLIENT_ALLOW_CROSS_DC;
-import static org.apache.hadoop.ozone.OzoneConfigKeys.OZONE_CLIENT_ALLOW_CROSS_DC_DEFAULT;
+import static org.apache.hadoop.ozone.OzoneConfigKeys.OZONE_CLIENT_CROSS_DC_READ_ALLOW;
+import static org.apache.hadoop.ozone.OzoneConfigKeys.OZONE_CLIENT_CROSS_DC_READ_ALLOW_DEFAULT;
 
 /**
  * This class wraps necessary container-level rpc calls
@@ -197,7 +197,8 @@ public class ECContainerOperationClient implements Closeable {
             .setReplicationConfig(repConfig).setNodes(ImmutableList.of(dn))
             .setState(Pipeline.PipelineState.CLOSED)
             .setReplicaIndexes(new SingletonMap(dn, replicaIndex))
-            .setAllowCrossDc(config.getBoolean(OZONE_CLIENT_ALLOW_CROSS_DC, OZONE_CLIENT_ALLOW_CROSS_DC_DEFAULT))
+            .setAllowCrossDcRead(config.getBoolean(OZONE_CLIENT_CROSS_DC_READ_ALLOW,
+                OZONE_CLIENT_CROSS_DC_READ_ALLOW_DEFAULT))
             .build();
   }
 

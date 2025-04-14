@@ -254,7 +254,7 @@ public class ECBlockOutputStreamEntry extends BlockOutputStreamEntry {
         .setState(ecPipeline.getPipelineState())
         .setNodes(ImmutableList.of(node))
         .setReplicaIndexes(indiciesForSinglePipeline)
-        .setAllowCrossDc(getConf().allowCrossDc())
+        .setAllowCrossDcRead(getConf().allowCrossDcRead())
         .build();
   }
 

@@ -247,12 +247,12 @@ public class OzoneClientConfig {
       tags = ConfigTag.CLIENT)
   private String fsDefaultBucketLayout = "FILE_SYSTEM_OPTIMIZED";
 
-  @Config(key = "allow-cross-dc",
+  @Config(key = "crossdc.read.allow",
       defaultValue = "true",
       type = ConfigType.BOOLEAN,
-      description = "Allows clients located outside the bucket's datacenters to perform reads and writes.",
+      description = "Allows clients located outside the bucket's datacenters to perform reads.",
       tags = ConfigTag.CLIENT)
-  private boolean allowCrossDc = true;
+  private boolean allowCrossDcRead = true;
 
   @PostConstruct
   public void validate() {
@@ -460,11 +460,11 @@ public class OzoneClientConfig {
     this.datastreamPipelineMode = datastreamPipelineMode;
   }
 
-  public boolean allowCrossDc() {
-    return allowCrossDc;
+  public boolean allowCrossDcRead() {
+    return allowCrossDcRead;
   }
 
-  public void setAllowCrossDc(boolean allowCrossDc) {
-    this.allowCrossDc = allowCrossDc;
+  public void setAllowCrossDcRead(boolean allowCrossDcRead) {
+    this.allowCrossDcRead = allowCrossDcRead;
   }
 }
