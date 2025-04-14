@@ -199,7 +199,8 @@ public class LeaderAppendLogEntryGenerator extends BaseAppendLogGenerator
             RatisReplicationConfig.getInstance(ReplicationFactor.THREE))
         .setLeaderId(UUID.fromString(serverId))
         .setNodes(datanodes)
-        .setAllowCrossDcRead(conf.getBoolean(OZONE_CLIENT_CROSS_DC_READ_ALLOW, OZONE_CLIENT_CROSS_DC_READ_ALLOW_DEFAULT))
+        .setAllowCrossDcRead(conf.getBoolean(OZONE_CLIENT_CROSS_DC_READ_ALLOW,
+            OZONE_CLIENT_CROSS_DC_READ_ALLOW_DEFAULT))
         .build();
 
     return XceiverClientRatis
