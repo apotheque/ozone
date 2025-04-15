@@ -310,10 +310,7 @@ public final class Pipeline {
     if (excluded == null) {
       excluded = Collections.emptySet();
     }
-    // if no nodes left and pipeline is not bound to any datacenter, delegate to getFirstNode
-    // otherwise, nodesInOrder is empty due to topology filtering for cross-DC read, which we restrict
-    if (nodesInOrder.isEmpty() && (getDatacenters().isEmpty() || allowCrossDcRead)) {
-      LOG.debug("Nodes in order is empty, no datacenter restrictions, delegate to getFirstNode");
+    if (nodesInOrder.isEmpty()) {
       return getFirstNode(excluded);
     }
     for (DatanodeDetails d : nodesInOrder) {
@@ -336,7 +333,11 @@ public final class Pipeline {
   }
 
   public List<DatanodeDetails> getNodesInOrder() {
-    if (nodesInOrder.isEmpty()) {
+    return getNodesInOrder(true);
+  }
+
+  public List<DatanodeDetails> getNodesInOrder(boolean ignoreTopology) {
+    if (nodesInOrder.isEmpty() && ignoreTopology) {
       LOG.debug("Nodes in order is empty, delegate to getNodes");
       return getNodes();
     }
