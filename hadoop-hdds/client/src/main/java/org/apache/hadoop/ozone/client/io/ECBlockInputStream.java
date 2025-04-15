@@ -190,7 +190,6 @@ public class ECBlockInputStream extends BlockExtendedInputStream {
           .setId(PipelineID.valueOf(dataLocation.getUuid()))
           .setReplicaIndexes(ImmutableMap.of(dataLocation, locationIndex + 1))
           .setState(Pipeline.PipelineState.CLOSED)
-          .setAllowCrossDcRead(config.allowCrossDcRead())
           .build();
 
       BlockLocationInfo blkInfo = new BlockLocationInfo.Builder()
@@ -242,7 +241,6 @@ public class ECBlockInputStream extends BlockExtendedInputStream {
           .setId(PipelineID.randomId())
           .setReplicaIndexes(Collections.singletonMap(curIndexNode, replicaIndex))
           .setState(Pipeline.PipelineState.CLOSED)
-          .setAllowCrossDcRead(config.allowCrossDcRead())
           .build();
       blockLocationInfo.setPipeline(pipeline);
       return blockLocationInfo;

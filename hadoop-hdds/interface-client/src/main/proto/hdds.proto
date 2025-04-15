@@ -130,7 +130,6 @@ message Pipeline {
     // TODO(runzhiwang): when leaderID is gone, specify 6 as the index of leaderID128
     optional UUID leaderID128 = 100;
     repeated string datacenters = 103;
-    optional bool allowCrossDcRead = 104 [default = true];
 }
 
 message KeyValue {

@@ -96,8 +96,6 @@ public final class Pipeline {
 
   private final Set<String> datacenters;
 
-  private final boolean allowCrossDcRead;
-
   /**
    * The immutable properties of pipeline object is used in
    * ContainerStateManager#getMatchingContainerByPipeline to take a lock on
@@ -124,7 +122,6 @@ public final class Pipeline {
     creationTimestamp = b.creationTimestamp != null ? b.creationTimestamp : Instant.now();
     stateEnterTime = Instant.now();
     datacenters = b.datacenters;
-    allowCrossDcRead = b.allowCrossDcRead;
   }
 
   /**
@@ -394,8 +391,7 @@ public final class Pipeline {
         .setCreationTimeStamp(creationTimestamp.toEpochMilli())
         .addAllMembers(members)
         .addAllMemberReplicaIndexes(memberReplicaIndexes)
-        .addAllDatacenters(datacenters)
-        .setAllowCrossDcRead(allowCrossDcRead);
+        .addAllDatacenters(datacenters);
 
     if (replicationConfig instanceof ECReplicationConfig) {
       builder.setEcReplicationConfig(((ECReplicationConfig) replicationConfig)
@@ -496,8 +492,7 @@ public final class Pipeline {
         .setSuggestedLeaderId(suggestedLeaderId)
         .setNodeOrder(pipeline.getMemberOrdersList())
         .setCreateTimestamp(pipeline.getCreationTimeStamp())
-        .setDatacenters(new HashSet<>(pipeline.getDatacentersList()))
-        .setAllowCrossDcRead(pipeline.getAllowCrossDcRead());
+        .setDatacenters(new HashSet<>(pipeline.getDatacentersList()));
   }
 
   public static Pipeline getFromProtobuf(HddsProtos.Pipeline pipeline)
@@ -574,7 +569,6 @@ public final class Pipeline {
     private UUID suggestedLeaderId = null;
     private Map<DatanodeDetails, Integer> replicaIndexes;
     private Set<String> datacenters = new HashSet<>();
-    private boolean allowCrossDcRead = true;
 
     public Builder() { }
 
@@ -588,7 +582,6 @@ public final class Pipeline {
       this.creationTimestamp = pipeline.getCreationTimestamp();
       this.suggestedLeaderId = pipeline.getSuggestedLeaderId();
       this.datacenters = pipeline.getDatacenters();
-      this.allowCrossDcRead = pipeline.allowCrossDcRead;
       if (nodeStatus != null) {
         replicaIndexes = new HashMap<>();
         for (DatanodeDetails dn : nodeStatus.keySet()) {
@@ -659,11 +652,6 @@ public final class Pipeline {
 
     public Builder setDatacenters(Set<String> datacenters) {
       this.datacenters = datacenters;
-      return this;
-    }
-
-    public Builder setAllowCrossDcRead(boolean allowCrossDcRead) {
-      this.allowCrossDcRead = allowCrossDcRead;
       return this;
     }
 

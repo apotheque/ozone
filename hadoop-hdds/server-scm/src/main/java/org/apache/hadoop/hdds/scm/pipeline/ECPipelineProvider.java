@@ -39,9 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.hadoop.ozone.OzoneConfigKeys.OZONE_CLIENT_CROSS_DC_READ_ALLOW;
-import static org.apache.hadoop.ozone.OzoneConfigKeys.OZONE_CLIENT_CROSS_DC_READ_ALLOW_DEFAULT;
-
 /**
  * Class to create pipelines for EC containers.
  */
@@ -136,8 +133,6 @@ public class ECPipelineProvider extends PipelineProvider<ECReplicationConfig> {
         .setReplicationConfig(repConfig)
         .setNodes(dns)
         .setReplicaIndexes(indexes)
-        .setAllowCrossDcRead(conf.getBoolean(OZONE_CLIENT_CROSS_DC_READ_ALLOW,
-            OZONE_CLIENT_CROSS_DC_READ_ALLOW_DEFAULT))
         .build();
   }
 
