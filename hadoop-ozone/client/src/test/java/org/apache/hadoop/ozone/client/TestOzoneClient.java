@@ -48,6 +48,7 @@ import java.util.UUID;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.hadoop.hdds.client.ReplicationFactor.ONE;
+import static org.apache.hadoop.ozone.OzoneConfigKeys.OZONE_CLIENT_CROSS_DC_READ_ALLOW;
 
 /**
  * Real unit test for OzoneClient.
@@ -170,6 +171,23 @@ public class TestOzoneClient {
       Assertions.assertFalse(key.getCreationTime().isBefore(testStartTime));
       Assertions.assertFalse(key.getModificationTime().isBefore(testStartTime));
     }
+  }
+
+  @Test
+  public void testReadKeyThrowsIOExceptionWhenCrossDcReadsNotAllowed() throws IOException {
+    close();
+    OzoneConfiguration config = new OzoneConfiguration();
+    config.setBoolean(OZONE_CLIENT_CROSS_DC_READ_ALLOW, false);
+    createNewClient(config, new SinglePipelineBlockAllocator(config));
+
+    OzoneBucket bucket = getOzoneBucket();
+    String keyName = UUID.randomUUID().toString();
+    String value = "sample value";
+    OzoneOutputStream out = bucket.createKey(keyName, value.getBytes(UTF_8).length);
+    out.write(value.getBytes(UTF_8));
+    out.close();
+
+    Assertions.assertThrows(IOException.class, () -> bucket.readKey(keyName));
   }
 
   @Test
