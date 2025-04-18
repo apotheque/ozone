@@ -207,7 +207,7 @@ public class SCMBlockProtocolServer implements
           if (client != null) {
             final List<DatanodeDetails> nodes = block.getPipeline().getNodes();
             final List<DatanodeDetails> sorted = scm.getClusterMap()
-                .sortByDistanceCost(client, nodes, nodes.size(), false);
+                .sortByDistanceCost(client, nodes, nodes.size());
             if (!Objects.equals(sorted, block.getPipeline().getNodesInOrder())) {
               block = block.toBuilder()
                   .setPipeline(block.getPipeline().copyWithNodesInOrder(sorted))

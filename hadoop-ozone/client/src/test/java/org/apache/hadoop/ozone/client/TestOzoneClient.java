@@ -187,7 +187,8 @@ public class TestOzoneClient {
     out.write(value.getBytes(UTF_8));
     out.close();
 
-    Assertions.assertThrows(IOException.class, () -> bucket.readKey(keyName));
+    IOException exception = Assertions.assertThrows(IOException.class, () -> bucket.readKey(keyName));
+    Assertions.assertEquals("Cross-DC reads are not allowed.", exception.getMessage());
   }
 
   @Test

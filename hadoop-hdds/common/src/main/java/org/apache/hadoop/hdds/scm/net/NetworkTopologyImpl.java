@@ -772,7 +772,7 @@ public class NetworkTopologyImpl implements NetworkTopology {
    */
   @Override
   public <N extends Node> List<N> sortByDistanceCost(Node reader,
-      List<N> nodes, int activeLen, boolean forRead) {
+      List<N> nodes, int activeLen) {
     // shuffle input list of nodes if reader is not defined
     if (reader == null) {
       List<N> shuffledNodes =
@@ -791,7 +791,7 @@ public class NetworkTopologyImpl implements NetworkTopology {
     for (int i = 0; i < activeLen; i++) {
       int cost = costs[i];
       N node = nodes.get(i);
-      if (cost < READ_COST_LIMIT || !forRead) {
+      if (cost < READ_COST_LIMIT) {
         tree.computeIfAbsent(cost, k -> Lists.newArrayListWithExpectedSize(1))
                 .add(node);
       }
@@ -805,9 +805,7 @@ public class NetworkTopologyImpl implements NetworkTopology {
       }
     }
 
-    if (!forRead) {
-      Preconditions.checkState(ret.size() == activeLen,  "Wrong number of nodes sorted!");
-    }
+    Preconditions.checkState(ret.size() == activeLen,  "Wrong number of nodes sorted!");
 
     return ret;
   }
