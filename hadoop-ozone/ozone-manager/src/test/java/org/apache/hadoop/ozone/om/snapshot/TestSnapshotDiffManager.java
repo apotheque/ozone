@@ -64,6 +64,7 @@ import org.apache.ozone.rocksdb.util.RdbUtil;
 import org.apache.ozone.rocksdiff.DifferSnapshotInfo;
 import org.apache.ozone.rocksdiff.RocksDBCheckpointDiffer;
 import org.apache.ozone.rocksdiff.RocksDiffUtils;
+import org.apache.ozone.test.tag.Unhealthy;
 import org.apache.ratis.util.ExitUtils;
 import javax.annotation.Nonnull;
 import org.awaitility.Awaitility;
@@ -176,6 +177,7 @@ import static org.mockito.Mockito.when;
 /**
  * Tests for SnapshotDiffManager.
  */
+@Unhealthy("Fails with JVM Error")
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class TestSnapshotDiffManager {

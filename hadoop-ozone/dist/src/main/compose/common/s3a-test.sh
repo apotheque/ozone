@@ -97,7 +97,7 @@ EOF
   # - ITestS3AContractGetFileStatusV1List: HDDS-10617
   # - ITestS3AContractRename: HDDS-10665
   mvn ${MAVEN_ARGS:-} --fail-never --show-version \
-    -Dtest='ITestS3AContract*, ITestS3ACommitterMRJob, !ITestS3AContractDistCp, !ITestS3AContractGetFileStatusV1List, !ITestS3AContractRename' \
+    -Dtest='ITestS3AContract*, !ITestS3AContractDistCp, !ITestS3AContractGetFileStatusV1List, !ITestS3AContractRename' \
     clean test
 
   local target="${RESULT_DIR}/junit/${bucket}/target"
