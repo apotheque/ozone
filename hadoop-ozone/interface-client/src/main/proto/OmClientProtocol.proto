@@ -526,6 +526,8 @@ enum Status {
     INVALID_PATH = 93;
 
     TOO_MANY_BUCKETS = 94;
+
+    TOO_MANY_DATACENTERS = 95;
 }
 
 /**
