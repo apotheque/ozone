@@ -110,6 +110,12 @@ public class ECUnderReplicationHandler implements UnhealthyReplicationHandler {
     ContainerInfo container = result.getContainerInfo();
     LOG.debug("Handling under-replicated container: {}", container);
 
+    Set<String> datacenters = container.getDatacenters();
+    if (datacenters.size() > 1) {
+      throw new IllegalStateException("EC only supports no more than one datacenter. " +
+          "Requested datacenters: " + datacenters);
+    }
+
     final ECContainerReplicaCount replicaCount =
         new ECContainerReplicaCount(container, replicas, pendingOps,
             remainingMaintenanceRedundancy);
@@ -159,7 +165,7 @@ public class ECUnderReplicationHandler implements UnhealthyReplicationHandler {
       IOException firstException = null;
       try {
         commandsSent += processMissingIndexes(replicaCount, sources,
-            availableSourceNodes, excludedNodes, usedNodes);
+            availableSourceNodes, excludedNodes, usedNodes, datacenters);
       } catch (InsufficientDatanodesException
           | CommandTargetOverloadedException  e) {
         firstException = e;
@@ -168,7 +174,7 @@ public class ECUnderReplicationHandler implements UnhealthyReplicationHandler {
       excludedNodes.addAll(replicationManager.getExcludedNodes());
       try {
         commandsSent += processDecommissioningIndexes(replicaCount, sources,
-            availableSourceNodes, excludedNodes, usedNodes);
+            availableSourceNodes, excludedNodes, usedNodes, datacenters);
       } catch (InsufficientDatanodesException
           | CommandTargetOverloadedException e) {
         if (firstException == null) {
@@ -177,7 +183,7 @@ public class ECUnderReplicationHandler implements UnhealthyReplicationHandler {
       }
       try {
         commandsSent += processMaintenanceOnlyIndexes(replicaCount, sources,
-            excludedNodes, usedNodes);
+            excludedNodes, usedNodes, datacenters);
       } catch (InsufficientDatanodesException
           | CommandTargetOverloadedException e) {
         if (firstException == null) {
@@ -276,7 +282,8 @@ public class ECUnderReplicationHandler implements UnhealthyReplicationHandler {
       Pair<ContainerReplica, NodeStatus>> sources,
       List<DatanodeDetails> availableSourceNodes,
       List<DatanodeDetails> excludedNodes,
-      List<DatanodeDetails> usedNodes) throws IOException {
+      List<DatanodeDetails> usedNodes,
+      Set<String> datacenters) throws IOException {
     ContainerInfo container = replicaCount.getContainer();
     ECReplicationConfig repConfig =
         (ECReplicationConfig)container.getReplicationConfig();
@@ -303,8 +310,7 @@ public class ECUnderReplicationHandler implements UnhealthyReplicationHandler {
 
       // placement with overloaded nodes excluded
       final List<DatanodeDetails> selectedDatanodes = getTargetDatanodes(
-          container, expectedTargetCount, usedNodes, excludedOrOverloadedNodes
-      );
+          container, expectedTargetCount, usedNodes, excludedOrOverloadedNodes, datacenters);
       final int targetCount = selectedDatanodes.size();
 
       if (hasOverloaded &&
@@ -315,7 +321,7 @@ public class ECUnderReplicationHandler implements UnhealthyReplicationHandler {
 
         // check if placement exists when overloaded nodes are not excluded
         final List<DatanodeDetails> targetsMaybeOverloaded = getTargetDatanodes(
-            container, expectedTargetCount, usedNodes, excludedNodes);
+            container, expectedTargetCount, usedNodes, excludedNodes, datacenters);
 
         if (targetsMaybeOverloaded.size() == expectedTargetCount) {
           final int overloadedCount = expectedTargetCount - targetCount;
@@ -407,11 +413,12 @@ public class ECUnderReplicationHandler implements UnhealthyReplicationHandler {
   private List<DatanodeDetails> getTargetDatanodes(
       ContainerInfo container, int requiredNodes,
       List<DatanodeDetails> usedNodes,
-      List<DatanodeDetails> excludedNodes
+      List<DatanodeDetails> excludedNodes,
+      Set<String> datacenters
   ) throws SCMException {
     return ReplicationManagerUtil.getTargetDatanodes(
         containerPlacement, requiredNodes,
-        usedNodes, excludedNodes, Collections.emptySet(),
+        usedNodes, excludedNodes, datacenters,
         currentContainerSize, container);
   }
 
@@ -424,7 +431,7 @@ public class ECUnderReplicationHandler implements UnhealthyReplicationHandler {
       ECContainerReplicaCount replicaCount,
       Map<Integer, Pair<ContainerReplica, NodeStatus>> sources,
       List<DatanodeDetails> availableSourceNodes,
-      List<DatanodeDetails> excludedNodes, List<DatanodeDetails> usedNodes)
+      List<DatanodeDetails> excludedNodes, List<DatanodeDetails> usedNodes, Set<String> datacenters)
       throws IOException {
     ContainerInfo container = replicaCount.getContainer();
     Set<Integer> decomIndexes = replicaCount.decommissioningOnlyIndexes(true);
@@ -433,7 +440,7 @@ public class ECUnderReplicationHandler implements UnhealthyReplicationHandler {
       LOG.debug("Processing decommissioning indexes {} for container {}.",
           decomIndexes, container.containerID());
       final List<DatanodeDetails> selectedDatanodes = getTargetDatanodes(
-          container, decomIndexes.size(), usedNodes, excludedNodes);
+          container, decomIndexes.size(), usedNodes, excludedNodes, datacenters);
 
       ContainerPlacementStatus placementStatusWithSelectedTargets =
           validatePlacement(container, availableSourceNodes, selectedDatanodes);
@@ -510,7 +517,7 @@ public class ECUnderReplicationHandler implements UnhealthyReplicationHandler {
   private int processMaintenanceOnlyIndexes(
       ECContainerReplicaCount replicaCount,
       Map<Integer, Pair<ContainerReplica, NodeStatus>> sources,
-      List<DatanodeDetails> excludedNodes, List<DatanodeDetails> usedNodes)
+      List<DatanodeDetails> excludedNodes, List<DatanodeDetails> usedNodes, Set<String> datacenters)
       throws IOException {
     Set<Integer> maintIndexes = replicaCount.maintenanceOnlyIndexes(true);
     if (maintIndexes.isEmpty()) {
@@ -530,8 +537,7 @@ public class ECUnderReplicationHandler implements UnhealthyReplicationHandler {
             "additional copies: {}.", container.containerID(),
         additionalMaintenanceCopiesNeeded);
     List<DatanodeDetails> targets = getTargetDatanodes(
-        container, maintIndexes.size(), usedNodes, excludedNodes
-    );
+        container, maintIndexes.size(), usedNodes, excludedNodes, datacenters);
     usedNodes.addAll(targets);
 
     Iterator<DatanodeDetails> iterator = targets.iterator();
