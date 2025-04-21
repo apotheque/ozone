@@ -308,7 +308,6 @@ public final class Pipeline {
       excluded = Collections.emptySet();
     }
     if (nodesInOrder.isEmpty()) {
-      LOG.debug("Nodes in order is empty, delegate to getFirstNode");
       return getFirstNode(excluded);
     }
     for (DatanodeDetails d : nodesInOrder) {
@@ -331,7 +330,11 @@ public final class Pipeline {
   }
 
   public List<DatanodeDetails> getNodesInOrder() {
-    if (nodesInOrder.isEmpty()) {
+    return getNodesInOrder(true);
+  }
+
+  public List<DatanodeDetails> getNodesInOrder(boolean ignoreTopology) {
+    if (nodesInOrder.isEmpty() && ignoreTopology) {
       LOG.debug("Nodes in order is empty, delegate to getNodes");
       return getNodes();
     }

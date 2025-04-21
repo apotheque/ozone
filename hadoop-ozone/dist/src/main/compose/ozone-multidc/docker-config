@@ -64,6 +64,8 @@ OZONE-SITE.XML_ozone.scm.pipeline.creation.auto.factor.one=false
 OZONE-SITE.XML_hdds.scm.safemode.pipeline-availability.check=false
 OZONE-SITE.XML_hdds.scm.background.pipeline.creator.enabled=false
 
+OZONE-SITE.XML_ozone.client.crossdc.read.allow=false
+
 OZONE_CONF_DIR=/etc/hadoop
 OZONE_LOG_DIR=/var/log/hadoop
 

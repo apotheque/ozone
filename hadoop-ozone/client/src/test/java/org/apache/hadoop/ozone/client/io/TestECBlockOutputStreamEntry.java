@@ -21,6 +21,7 @@ import org.apache.hadoop.hdds.client.ECReplicationConfig;
 import org.apache.hadoop.hdds.client.ReplicationConfig;
 import org.apache.hadoop.hdds.conf.OzoneConfiguration;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
+import org.apache.hadoop.hdds.scm.OzoneClientConfig;
 import org.apache.hadoop.hdds.scm.XceiverClientManager;
 import org.apache.hadoop.hdds.scm.XceiverClientSpi;
 import org.apache.hadoop.hdds.scm.pipeline.Pipeline;
@@ -65,7 +66,8 @@ public class TestECBlockOutputStreamEntry {
       HashSet<XceiverClientSpi> clients = new HashSet<>();
       final ECBlockOutputStreamEntry.Builder b = new ECBlockOutputStreamEntry.Builder();
       b.setXceiverClientManager(manager)
-          .setPipeline(anECPipeline);
+          .setPipeline(anECPipeline)
+          .setConfig(new OzoneClientConfig());
       final ECBlockOutputStreamEntry entry = b.build();
       for (int i = 0; i < nodes.size(); i++) {
         clients.add(
@@ -103,7 +105,8 @@ public class TestECBlockOutputStreamEntry {
       HashSet<XceiverClientSpi> clients = new HashSet<>();
       final ECBlockOutputStreamEntry.Builder b = new ECBlockOutputStreamEntry.Builder();
       b.setXceiverClientManager(manager)
-          .setPipeline(anECPipeline);
+          .setPipeline(anECPipeline)
+          .setConfig(new OzoneClientConfig());
       final ECBlockOutputStreamEntry entry = b.build();
       for (int i = 0; i < nodes.size(); i++) {
         clients.add(

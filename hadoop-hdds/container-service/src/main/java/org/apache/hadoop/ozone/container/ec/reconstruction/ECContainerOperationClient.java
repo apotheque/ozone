@@ -191,7 +191,8 @@ public class ECContainerOperationClient implements Closeable {
     return Pipeline.newBuilder().setId(PipelineID.valueOf(dn.getUuid()))
             .setReplicationConfig(repConfig).setNodes(ImmutableList.of(dn))
             .setState(Pipeline.PipelineState.CLOSED)
-            .setReplicaIndexes(new SingletonMap(dn, replicaIndex)).build();
+            .setReplicaIndexes(new SingletonMap(dn, replicaIndex))
+            .build();
   }
 
   public XceiverClientManager getXceiverClientManager() {

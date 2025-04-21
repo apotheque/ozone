@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import org.apache.hadoop.hdds.client.BlockID;
 import org.apache.hadoop.hdds.scm.OzoneClientConfig;
 import org.apache.hadoop.hdds.scm.XceiverClientFactory;
+import org.apache.hadoop.hdds.scm.pipeline.Pipeline;
 import org.apache.hadoop.hdds.scm.storage.BlockExtendedInputStream;
 import org.apache.hadoop.hdds.scm.storage.BlockLocationInfo;
 import org.apache.hadoop.hdds.scm.storage.ByteReaderStrategy;
@@ -86,11 +87,16 @@ public class KeyInputStream extends MultipartInputStream {
         retry = null;
       }
 
+      Pipeline pipeline = omKeyLocationInfo.getPipeline();
+      if (pipeline.getNodesInOrder(false).isEmpty() && !config.allowCrossDcRead()) {
+        throw new IOException("Cross-DC reads are not allowed.");
+      }
+
       BlockExtendedInputStream stream =
           blockStreamFactory.create(
               keyInfo.getReplicationConfig(),
               omKeyLocationInfo,
-              omKeyLocationInfo.getPipeline(),
+              pipeline,
               omKeyLocationInfo.getToken(),
               xceiverClientFactory,
               retry,
