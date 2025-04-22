@@ -27,6 +27,6 @@ export OZONE_REPLICATION_FACTOR=3
 # shellcheck source=/dev/null
 source "$COMPOSE_DIR/../testlib.sh"
 
-start_docker_env
+COMPOSE_FILE=docker-compose-test.yaml start_docker_env
 
 execute_robot_test ${SCM} crossdc/testCrossDcBalancer.robot

@@ -39,7 +39,7 @@ services:
       <<: *replication
     command: ["ozone","datanode"]
     volumes:
-      - datanode1:/data
+      - tmpfs1:/data
       - ../..:/opt/hadoop
     networks:
       ozone_net:
@@ -53,7 +53,7 @@ services:
       <<: *replication
     command: ["ozone","datanode"]
     volumes:
-      - datanode2:/data
+      - tmpfs2:/data
       - ../..:/opt/hadoop
     networks:
       ozone_net:
@@ -67,7 +67,7 @@ services:
       <<: *replication
     command: ["ozone","datanode"]
     volumes:
-      - datanode3:/data
+      - tmpfs3:/data
       - ../..:/opt/hadoop
     networks:
       ozone_net:
@@ -81,7 +81,7 @@ services:
       <<: *replication
     command: ["ozone","datanode"]
     volumes:
-      - datanode4:/data
+      - tmpfs4:/data
       - ../..:/opt/hadoop
     networks:
       ozone_net:
@@ -95,7 +95,7 @@ services:
       <<: *replication
     command: ["ozone","datanode"]
     volumes:
-      - datanode5:/data
+      - tmpfs5:/data
       - ../..:/opt/hadoop
     networks:
       ozone_net:
@@ -109,7 +109,7 @@ services:
       <<: *replication
     command: ["ozone","datanode"]
     volumes:
-      - datanode6:/data
+      - tmpfs6:/data
       - ../..:/opt/hadoop
     networks:
       ozone_net:
@@ -123,7 +123,7 @@ services:
      <<: *replication
    command: ["ozone","datanode"]
    volumes:
-     - datanode7:/data
+     - tmpfs7:/data
      - ../..:/opt/hadoop
    networks:
      ozone_net:
@@ -137,7 +137,7 @@ services:
      <<: *replication
    command: ["ozone","datanode"]
    volumes:
-     - datanode8:/data
+     - tmpfs8:/data
      - ../..:/opt/hadoop
    networks:
      ozone_net:
@@ -151,7 +151,7 @@ services:
      <<: *replication
    command: ["ozone","datanode"]
    volumes:
-     - datanode9:/data
+     - tmpfs9:/data
      - ../..:/opt/hadoop
    networks:
      ozone_net:
@@ -167,9 +167,6 @@ services:
       - "9862"
     hostname: om1
     command: ["ozone","om"]
-    volumes:
-      - ../..:/opt/hadoop
-      - om1:/data
     networks:
       ozone_net:
         ipv4_address: 10.5.0.11
@@ -184,9 +181,6 @@ services:
       - "9862"
     hostname: om2
     command: ["ozone","om"]
-    volumes:
-      - ../..:/opt/hadoop
-      - om2:/data
     networks:
       ozone_net:
         ipv4_address: 10.5.0.12
@@ -201,9 +195,6 @@ services:
       - "9862"
     hostname: om3
     command: ["ozone","om"]
-    volumes:
-      - ../..:/opt/hadoop
-      - om3:/data
     networks:
       ozone_net:
         ipv4_address: 10.5.0.13
@@ -216,9 +207,6 @@ services:
       OZONE-SITE.XML_hdds.scm.safemode.min.datanode: ${OZONE_SAFEMODE_MIN_DATANODES:-1}
       <<: *replication
     command: ["ozone","scm"]
-    volumes:
-      - ../..:/opt/hadoop
-      - scm1:/data
     networks:
       ozone_net:
         ipv4_address: 10.5.0.14
@@ -232,9 +220,6 @@ services:
       OZONE-SITE.XML_hdds.scm.safemode.min.datanode: ${OZONE_SAFEMODE_MIN_DATANODES:-1}
       <<: *replication
     command: ["ozone","scm"]
-    volumes:
-      - ../..:/opt/hadoop
-      - scm2:/data
     networks:
       ozone_net:
         ipv4_address: 10.5.0.15
@@ -248,9 +233,6 @@ services:
       OZONE-SITE.XML_hdds.scm.safemode.min.datanode: ${OZONE_SAFEMODE_MIN_DATANODES:-1}
       <<: *replication
     command: ["ozone","scm"]
-    volumes:
-      - ../..:/opt/hadoop
-      - scm3:/data
     networks:
       ozone_net:
         ipv4_address: 10.5.0.16
@@ -282,9 +264,6 @@ services:
     environment:
       <<: *replication
     command: ["ozone","recon"]
-    volumes:
-      - ../..:/opt/hadoop
-      - recon:/data
     networks:
       ozone_net:
         ipv4_address: 10.5.0.19
@@ -296,19 +275,57 @@ networks:
         - subnet: 10.5.0.0/16
           gateway: 10.5.0.1
 volumes:
-  datanode1:
-  datanode2:
-  datanode3:
-  datanode4:
-  datanode5:
-  datanode6:
-  datanode7:
-  datanode8:
-  datanode9:
-  om1:
-  om2:
-  om3:
-  scm1:
-  scm2:
-  scm3:
-  recon:
+  tmpfs1:
+    driver: local
+    driver_opts:
+      o: "size=1g,uid=1000"
+      device: tmpfs
+      type: tmpfs
+  tmpfs2:
+    driver: local
+    driver_opts:
+      o: "size=1g,uid=2000"
+      device: tmpfs
+      type: tmpfs
+  tmpfs3:
+    driver: local
+    driver_opts:
+      o: "size=1g,uid=3000"
+      device: tmpfs
+      type: tmpfs
+  tmpfs4:
+    driver: local
+    driver_opts:
+      o: "size=1g,uid=4000"
+      device: tmpfs
+      type: tmpfs
+  tmpfs5:
+    driver: local
+    driver_opts:
+      o: "size=1g,uid=5000"
+      device: tmpfs
+      type: tmpfs
+  tmpfs6:
+    driver: local
+    driver_opts:
+      o: "size=1g,uid=6000"
+      device: tmpfs
+      type: tmpfs
+  tmpfs7:
+    driver: local
+    driver_opts:
+      o: "size=1g,uid=7000"
+      device: tmpfs
+      type: tmpfs
+  tmpfs8:
+    driver: local
+    driver_opts:
+      o: "size=1g,uid=8000"
+      device: tmpfs
+      type: tmpfs
+  tmpfs9:
+    driver: local
+    driver_opts:
+      o: "size=1g,uid=9000"
+      device: tmpfs
+      type: tmpfs
