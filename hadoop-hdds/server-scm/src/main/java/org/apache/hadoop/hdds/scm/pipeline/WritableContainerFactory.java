@@ -78,7 +78,7 @@ public class WritableContainerFactory {
       return ratisProvider.getContainer(size, repConfig, owner, excludeList, datacenters);
     case EC:
       return ecProvider.getContainer(size, (ECReplicationConfig)repConfig,
-          owner, excludeList, null);
+          owner, excludeList, datacenters);
     default:
       throw new IOException(repConfig.getReplicationType()
           + " is an invalid replication type");

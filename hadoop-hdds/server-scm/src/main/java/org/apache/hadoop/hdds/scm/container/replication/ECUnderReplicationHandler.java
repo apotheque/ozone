@@ -109,12 +109,7 @@ public class ECUnderReplicationHandler implements UnhealthyReplicationHandler {
       final int remainingMaintenanceRedundancy) throws IOException {
     ContainerInfo container = result.getContainerInfo();
     LOG.debug("Handling under-replicated container: {}", container);
-
     Set<String> datacenters = container.getDatacenters();
-    if (datacenters.size() > 1) {
-      throw new IllegalStateException("EC only supports no more than one datacenter. " +
-          "Requested datacenters: " + datacenters);
-    }
 
     final ECContainerReplicaCount replicaCount =
         new ECContainerReplicaCount(container, replicas, pendingOps,

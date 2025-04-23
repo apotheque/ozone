@@ -103,7 +103,7 @@ public class WritableECContainerProvider
           Pipeline.PipelineState.OPEN);
       if (openPipelineCount < maximumPipelines) {
         try {
-          return allocateContainer(repConfig, size, owner, excludeList);
+          return allocateContainer(repConfig, size, owner, excludeList, datacenters);
         } catch (IOException e) {
           LOG.warn("Unable to allocate a container with {} existing ones; "
               + "requested size={}, replication={}, owner={}, {}",
@@ -172,7 +172,7 @@ public class WritableECContainerProvider
       }
       if (openPipelineCount < maximumPipelines) {
         synchronized (this) {
-          return allocateContainer(repConfig, size, owner, excludeList);
+          return allocateContainer(repConfig, size, owner, excludeList, datacenters);
         }
       }
       throw new IOException("Pipeline limit (" + maximumPipelines
@@ -196,7 +196,7 @@ public class WritableECContainerProvider
   }
 
   private ContainerInfo allocateContainer(ReplicationConfig repConfig,
-      long size, String owner, ExcludeList excludeList)
+      long size, String owner, ExcludeList excludeList, Set<String> datacenters)
       throws IOException {
 
     List<DatanodeDetails> excludedNodes = Collections.emptyList();
@@ -205,7 +205,7 @@ public class WritableECContainerProvider
     }
 
     Pipeline newPipeline = pipelineManager.createPipeline(repConfig,
-        excludedNodes, Collections.emptyList(), Collections.emptySet());
+        excludedNodes, Collections.emptyList(), datacenters);
     ContainerInfo container =
         containerManager.getMatchingContainer(size, owner, newPipeline);
     pipelineManager.openPipeline(newPipeline.getId());
