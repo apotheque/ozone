@@ -40,6 +40,8 @@ import org.apache.hadoop.hdds.scm.pipeline.PipelineStateManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.stream.Collectors;
+
 import static org.apache.hadoop.hdds.scm.exceptions.SCMException.ResultCodes.FAILED_TO_FIND_SUITABLE_NODE;
 
 /**
@@ -221,10 +223,6 @@ public final class SCMContainerPlacementRackScatter
           "than 0, but the given num is " + nodesRequired;
       throw new SCMException(errorMsg, null);
     }
-    if (datacenters.size() > 1) {
-      throw new IllegalStateException("EC only supports no more than one datacenter. " +
-          "Requested datacenters: " + datacenters);
-    }
     if (metrics != null) {
       metrics.incrDatanodeRequestCount(nodesRequired);
     }
@@ -265,7 +263,7 @@ public final class SCMContainerPlacementRackScatter
     if (usedNodes == null) {
       usedNodes = Collections.emptyList();
     }
-    List<Node> racks = getAllRacks(datacenters.stream().findFirst().orElse(null));
+    List<Node> racks = getAllRacks(datacenters);
     // usedRacksCntMap maps a rack to the number of usedNodes it contains
     Map<Node, Integer> usedRacksCntMap = new HashMap<>();
     for (Node node : usedNodes) {
@@ -551,27 +549,21 @@ public final class SCMContainerPlacementRackScatter
     return result;
   }
 
-  private List<Node> getAllRacks(@Nullable String datacenter) {
+  private List<Node> getAllRacks(Set<String> datacenters) {
     int maxLevel = networkTopology.getMaxLevel();
     List<Node> racks;
 
-    if (datacenter != null) {
+    if (!datacenters.isEmpty()) {
       if (maxLevel < DC_MIN_SUPPORTED_DEPTH) {
         throw new IllegalStateException(
-            String.format("Datacenter `%s` requested, but topology doesn't contain a datacenter level.", datacenter)
-        );
+            "Can't find racks within requested datacenters, because topology doesn't have a datacenter level.");
       }
 
       int datacenterLevel = maxLevel - 2;
-      InnerNode datacenterNode = networkTopology.getNodes(datacenterLevel).stream()
-          .filter(node -> node instanceof InnerNode && node.getNetworkName().equals(datacenter))
-          .map(node -> (InnerNode) node)
-          .findFirst()
-          .orElseThrow(() -> new IllegalStateException(
-              String.format("No datacenter `%s` found in network topology.", datacenter))
-          );
-
-      racks = datacenterNode.getNodes(2);
+      racks = networkTopology.getNodes(datacenterLevel).stream()
+          .filter(node -> node instanceof InnerNode && datacenters.contains(node.getNetworkName()))
+          .flatMap(node -> ((InnerNode) node).getNodes(2).stream())
+          .collect(Collectors.toList());
     } else {
       int rackLevel = maxLevel - 1;
       racks = networkTopology.getNodes(rackLevel);

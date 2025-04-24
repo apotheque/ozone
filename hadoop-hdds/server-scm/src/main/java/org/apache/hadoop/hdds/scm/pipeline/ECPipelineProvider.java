@@ -78,6 +78,11 @@ public class ECPipelineProvider extends PipelineProvider<ECReplicationConfig> {
   protected Pipeline create(ECReplicationConfig replicationConfig,
       List<DatanodeDetails> excludedNodes, List<DatanodeDetails> favoredNodes, Set<String> datacenters)
       throws IOException {
+    if (datacenters.size() > 1) {
+      throw new IllegalStateException("EC only supports no more than one datacenter. " +
+          "Requested datacenters: " + datacenters);
+    }
+
     List<DatanodeDetails> dns = placementPolicy
         .chooseDatanodes(excludedNodes, favoredNodes, datacenters,
             replicationConfig.getRequiredNodes(), 0, this.containerSizeBytes);
