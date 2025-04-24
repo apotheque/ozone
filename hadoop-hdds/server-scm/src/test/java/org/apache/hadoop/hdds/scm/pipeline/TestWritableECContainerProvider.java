@@ -514,8 +514,7 @@ public class TestWritableECContainerProvider {
     ExcludeList excludeList = new ExcludeList();
 
     // EmptyList should be passed if there are no nodes excluded.
-    ContainerInfo container = provider.getContainer(
-        1, repConfig, OWNER, excludeList, null);
+    ContainerInfo container = provider.getContainer(1, repConfig, OWNER, excludeList, Collections.emptySet());
     assertNotNull(container);
 
     verify(pipelineManagerSpy).createPipeline(repConfig,
@@ -527,8 +526,7 @@ public class TestWritableECContainerProvider {
     List<DatanodeDetails> excludedNodes =
         new ArrayList<>(excludeList.getDatanodes());
 
-    container = provider.getContainer(
-        1, repConfig, OWNER, excludeList, null);
+    container = provider.getContainer(1, repConfig, OWNER, excludeList, Collections.emptySet());
     assertNotNull(container);
     verify(pipelineManagerSpy).createPipeline(repConfig, excludedNodes,
         Collections.emptyList(), Collections.emptySet());
