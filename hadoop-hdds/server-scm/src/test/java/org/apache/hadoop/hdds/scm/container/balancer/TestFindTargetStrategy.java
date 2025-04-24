@@ -18,6 +18,16 @@
 
 package org.apache.hadoop.hdds.scm.container.balancer;
 
+import static org.apache.hadoop.hdds.scm.net.NetConstants.LEAF_SCHEMA;
+import static org.apache.hadoop.hdds.scm.net.NetConstants.NODEGROUP_SCHEMA;
+import static org.apache.hadoop.hdds.scm.net.NetConstants.RACK_SCHEMA;
+import static org.apache.hadoop.hdds.scm.net.NetConstants.ROOT_SCHEMA;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import org.apache.hadoop.hdds.conf.OzoneConfiguration;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
 import org.apache.hadoop.hdds.protocol.MockDatanodeDetails;
 import org.apache.hadoop.hdds.scm.container.MockNodeManager;
@@ -27,23 +37,25 @@ import org.apache.hadoop.hdds.scm.net.NetworkTopologyImpl;
 import org.apache.hadoop.hdds.scm.net.NodeSchema;
 import org.apache.hadoop.hdds.scm.net.NodeSchemaManager;
 import org.apache.hadoop.hdds.scm.node.DatanodeUsageInfo;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assertions;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import static org.apache.hadoop.hdds.scm.net.NetConstants.LEAF_SCHEMA;
-import static org.apache.hadoop.hdds.scm.net.NetConstants.NODEGROUP_SCHEMA;
-import static org.apache.hadoop.hdds.scm.net.NetConstants.RACK_SCHEMA;
-import static org.apache.hadoop.hdds.scm.net.NetConstants.ROOT_SCHEMA;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for all the implementations of FindTargetStrategy.
  */
 public class TestFindTargetStrategy {
+  private OzoneConfiguration config;
+
+  private NetworkTopology networkTopology;
+
+  @BeforeEach
+  void setUp() {
+    config = new OzoneConfiguration();
+
+    networkTopology = new NetworkTopologyImpl(config);
+  }
+
   /**
    * Checks whether FindTargetGreedyByUsage always choose target
    * for a given source by Usage.
@@ -51,7 +63,7 @@ public class TestFindTargetStrategy {
   @Test
   public void testFindTargetGreedyByUsage() {
     FindTargetGreedyByUsageInfo findTargetStrategyByUsageInfo =
-        new FindTargetGreedyByUsageInfo(null, null, null, null);
+        new FindTargetGreedyByUsageInfo(null, null, null, config, networkTopology);
     List<DatanodeUsageInfo> overUtilizedDatanodes = new ArrayList<>();
 
     //create three datanodes with different usageinfo
@@ -111,7 +123,7 @@ public class TestFindTargetStrategy {
     MockNodeManager mockNodeManager = new MockNodeManager(potentialTargets);
 
     FindTargetGreedyByUsageInfo findTargetGreedyByUsageInfo =
-        new FindTargetGreedyByUsageInfo(null, null, mockNodeManager, null);
+        new FindTargetGreedyByUsageInfo(null, null, mockNodeManager, config, networkTopology);
     findTargetGreedyByUsageInfo.reInitialize(potentialTargets, null, null);
 
     // now, reset potential targets to only the first datanode
@@ -139,8 +151,8 @@ public class TestFindTargetStrategy {
 
     NodeSchemaManager manager = NodeSchemaManager.getInstance();
     manager.init(schemas.toArray(new NodeSchema[0]), true);
-    NetworkTopology newCluster =
-        new NetworkTopologyImpl(manager);
+
+    NetworkTopology newCluster = new NetworkTopologyImpl(manager, config);
 
     DatanodeDetails source =
         MockDatanodeDetails.createDatanodeDetails("1.1.1.1", "/r1/ng1");
@@ -195,7 +207,7 @@ public class TestFindTargetStrategy {
 
     FindTargetGreedyByNetworkTopology findTargetGreedyByNetworkTopology =
         new FindTargetGreedyByNetworkTopology(
-            null, null, null, newCluster, null);
+            null, null, null, newCluster, config);
 
     findTargetGreedyByNetworkTopology.reInitialize(
         overUtilizedDatanodes, null, null);

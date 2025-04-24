@@ -18,21 +18,18 @@
 package org.apache.hadoop.hdds.scm.container.placement.algorithms;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.hadoop.hdds.conf.ConfigurationSource;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
 import org.apache.hadoop.hdds.scm.PlacementPolicy;
 import org.apache.hadoop.hdds.scm.SCMCommonPlacementPolicy;
-import org.apache.hadoop.hdds.scm.ScmUtils;
 import org.apache.hadoop.hdds.scm.exceptions.SCMException;
 import org.apache.hadoop.hdds.scm.net.NetworkTopology;
 import org.apache.hadoop.hdds.scm.node.NodeManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Container placement policy that randomly chooses healthy datanodes.
@@ -48,7 +45,8 @@ public final class SCMContainerPlacementRandom extends SCMCommonPlacementPolicy
   @VisibleForTesting
   public static final Logger LOG =
       LoggerFactory.getLogger(SCMContainerPlacementRandom.class);
-  private final Map<String, String> dcMapping;
+
+  private final NetworkTopology networkTopology;
 
   /**
    * Construct a random Block Placement policy.
@@ -56,11 +54,16 @@ public final class SCMContainerPlacementRandom extends SCMCommonPlacementPolicy
    * @param nodeManager nodeManager
    * @param conf Config
    */
-  public SCMContainerPlacementRandom(final NodeManager nodeManager,
-      final ConfigurationSource conf, final NetworkTopology networkTopology,
-      final boolean fallback, final SCMContainerPlacementMetrics metrics) {
+  public SCMContainerPlacementRandom(
+          NodeManager nodeManager,
+          ConfigurationSource conf,
+          NetworkTopology networkTopology,
+          boolean fallback,
+          SCMContainerPlacementMetrics metrics
+  ) {
     super(nodeManager, conf);
-    this.dcMapping = ScmUtils.getDcMapping(conf);
+
+    this.networkTopology = nodeManager.getClusterNetworkTopologyMap();
   }
 
   /**
@@ -90,7 +93,7 @@ public final class SCMContainerPlacementRandom extends SCMCommonPlacementPolicy
                 nodesRequired, metadataSizeRequired, dataSizeRequired);
     if (!datacenters.isEmpty()) {
       healthyNodes = healthyNodes.stream()
-          .filter(node -> datacenters.contains(node.getDc(dcMapping)))
+          .filter(node -> datacenters.contains(networkTopology.getRegionAncestor(node).getNetworkName()))
           .collect(Collectors.toList());
     }
     if (healthyNodes.size() == nodesRequired) {

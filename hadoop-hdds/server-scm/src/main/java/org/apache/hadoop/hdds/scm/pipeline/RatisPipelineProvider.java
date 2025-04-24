@@ -80,8 +80,13 @@ public class RatisPipelineProvider
     this.conf = conf;
     this.eventPublisher = eventPublisher;
     this.scmContext = scmContext;
-    this.placementPolicy = PipelinePlacementPolicyFactory
-        .getPolicy(nodeManager, stateManager, conf);
+
+    this.placementPolicy = PipelinePlacementPolicyFactory.getPolicy(
+        nodeManager,
+        stateManager,
+        conf
+    );
+
     this.pipelineNumberLimit = conf.getInt(
         ScmConfigKeys.OZONE_SCM_RATIS_PIPELINE_LIMIT,
         ScmConfigKeys.OZONE_SCM_RATIS_PIPELINE_LIMIT_DEFAULT);
@@ -162,9 +167,6 @@ public class RatisPipelineProvider
         replicationConfig.getReplicationFactor();
     switch (factor) {
     case ONE:
-      if (!datacenters.isEmpty()) {
-        throw new IllegalStateException("Datacenter locality is not supported for replication factor " + factor.name());
-      }
       dns = pickNodesNotUsed(replicationConfig, minRatisVolumeSizeBytes,
           containerSizeBytes, conf);
       break;

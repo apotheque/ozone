@@ -440,8 +440,7 @@ public final class StorageContainerManager extends ServiceRuntimeInfoImpl
     datanodeProtocolServer = new SCMDatanodeProtocolServer(conf, this,
         eventQueue, scmContext);
     blockProtocolServer = new SCMBlockProtocolServer(conf, this);
-    clientProtocolServer = new SCMClientProtocolServer(conf, this,
-        reconfigurationHandler);
+    clientProtocolServer = new SCMClientProtocolServer(conf, this, reconfigurationHandler, clusterMap);
 
     initializeEventHandlers();
 

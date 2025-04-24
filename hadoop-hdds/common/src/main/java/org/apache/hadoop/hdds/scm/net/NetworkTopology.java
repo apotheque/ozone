@@ -84,6 +84,15 @@ public interface NetworkTopology {
   Node getAncestor(Node node, int ancestorGen);
 
   /**
+   * Retrieves the ancestor region node for the given node.
+   * An ancestor region node is the first parent node that represents a region in the node hierarchy.
+   *
+   * @param node the node for which to find the ancestor region
+   * @return the ancestor region node if found, or the topmost node if there are no regions set up.
+   */
+  Node getRegionAncestor(Node node);
+
+  /**
    * Return the max level of this topology, start from 1 for ROOT. For example,
    * topology like "/rack/node" has the max level '3'.
    */
@@ -244,11 +253,5 @@ public interface NetworkTopology {
    * or shuffled input nodes otherwise. The size of returned list is limited
    * by activeLen parameter.
    */
-  default <N extends Node> List<N> sortByDistanceCost(Node reader,
-                                                      List<N> nodes, int activeLen) {
-    return sortByDistanceCost(reader, nodes, activeLen, true);
-  }
-
-  <N extends Node> List<N> sortByDistanceCost(Node reader,
-      List<N> nodes, int activeLen, boolean forRead);
+  <N extends Node> List<N> sortByDistanceCost(Node reader, List<N> nodes, int activeLen);
 }

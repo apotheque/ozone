@@ -45,18 +45,17 @@ public interface PipelineManager extends Closeable, PipelineManagerMXBean {
                           Set<String> datacenters)
       throws IOException;
 
+  Pipeline createPipeline(
+      ReplicationConfig replicationConfig,
+      List<DatanodeDetails> nodes
+  );
+
   Pipeline buildECPipeline(ReplicationConfig replicationConfig,
                            List<DatanodeDetails> excludedNodes,
                            List<DatanodeDetails> favoredNodes)
       throws IOException;
 
   void addEcPipeline(Pipeline pipeline) throws IOException;
-
-
-  Pipeline createPipeline(
-      ReplicationConfig replicationConfig,
-      List<DatanodeDetails> nodes
-  );
 
   Pipeline createPipelineForRead(
       ReplicationConfig replicationConfig, Set<ContainerReplica> replicas);

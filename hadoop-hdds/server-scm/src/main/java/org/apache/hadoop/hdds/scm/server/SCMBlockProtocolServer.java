@@ -42,6 +42,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.CommonConfigurationKeys;
 import org.apache.hadoop.hdds.client.BlockID;
@@ -207,7 +209,7 @@ public class SCMBlockProtocolServer implements
           if (client != null) {
             final List<DatanodeDetails> nodes = block.getPipeline().getNodes();
             final List<DatanodeDetails> sorted = scm.getClusterMap()
-                .sortByDistanceCost(client, nodes, nodes.size(), false);
+                .sortByDistanceCost(client, nodes, nodes.size());
             if (!Objects.equals(sorted, block.getPipeline().getNodesInOrder())) {
               block = block.toBuilder()
                   .setPipeline(block.getPipeline().copyWithNodesInOrder(sorted))
@@ -374,6 +376,15 @@ public class SCMBlockProtocolServer implements
       List<DatanodeDetails> sortedDatanodesList = scm.getClusterMap()
               .sortByDistanceCost(client, nodeList, nodeList.size());
 
+      if (client != null) {
+        String clientRegion = nodeManager.getClusterNetworkTopologyMap().getRegionAncestor(client).getNetworkFullPath();
+
+        if (!Objects.equals(clientRegion, client.getNetworkFullPath())) {
+          sortedDatanodesList = sortedDatanodesList.stream()
+                  .filter(node -> checkIsInSameRegion(node, clientRegion))
+                  .collect(Collectors.toList());
+        }
+      }
 
       return sortedDatanodesList;
     } catch (Exception ex) {
@@ -391,7 +402,13 @@ public class SCMBlockProtocolServer implements
     }
   }
 
-  private Node getClientNode(String clientMachine) {
+  private boolean checkIsInSameRegion(Node datanode, String clientRegionNode) {
+    String datanodeRegion = scm.getClusterMap().getRegionAncestor(datanode).getNetworkFullPath();
+
+    return Objects.equals(datanodeRegion, clientRegionNode);
+  }
+
+  private @Nullable Node getClientNode(String clientMachine) {
     if (StringUtils.isEmpty(clientMachine)) {
       return null;
     }

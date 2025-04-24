@@ -18,7 +18,18 @@
 
 package org.apache.hadoop.hdds.scm.pipeline;
 
+import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.ReplicationFactor.ONE;
+import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.ReplicationFactor.THREE;
+import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.ReplicationType.RATIS;
+import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.ReplicationType.STAND_ALONE;
+import static org.apache.hadoop.hdds.scm.ScmConfigKeys.OZONE_DATANODE_PIPELINE_LIMIT;
+import static org.apache.hadoop.hdds.scm.ScmConfigKeys.OZONE_DATANODE_RATIS_VOLUME_FREE_SPACE_MIN;
+import static org.apache.hadoop.hdds.scm.net.NetConstants.LEAF_SCHEMA;
+import static org.apache.hadoop.hdds.scm.net.NetConstants.RACK_SCHEMA;
+import static org.apache.hadoop.hdds.scm.net.NetConstants.ROOT_SCHEMA;
+
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -27,7 +38,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.hdds.HddsConfigKeys;
 import org.apache.hadoop.hdds.client.RatisReplicationConfig;
@@ -42,10 +52,9 @@ import org.apache.hadoop.hdds.scm.ContainerPlacementStatus;
 import org.apache.hadoop.hdds.scm.ScmConfigKeys;
 import org.apache.hadoop.hdds.scm.container.MockNodeManager;
 import org.apache.hadoop.hdds.scm.exceptions.SCMException;
-import org.apache.hadoop.hdds.scm.ha.SCMHAManagerStub;
 import org.apache.hadoop.hdds.scm.ha.SCMHAManager;
+import org.apache.hadoop.hdds.scm.ha.SCMHAManagerStub;
 import org.apache.hadoop.hdds.scm.metadata.SCMDBDefinition;
-import org.apache.hadoop.hdds.scm.node.NodeStatus;
 import org.apache.hadoop.hdds.scm.net.NetConstants;
 import org.apache.hadoop.hdds.scm.net.NetworkTopology;
 import org.apache.hadoop.hdds.scm.net.NetworkTopologyImpl;
@@ -53,7 +62,7 @@ import org.apache.hadoop.hdds.scm.net.Node;
 import org.apache.hadoop.hdds.scm.net.NodeImpl;
 import org.apache.hadoop.hdds.scm.net.NodeSchema;
 import org.apache.hadoop.hdds.scm.net.NodeSchemaManager;
-
+import org.apache.hadoop.hdds.scm.node.NodeStatus;
 import org.apache.hadoop.hdds.utils.db.DBStore;
 import org.apache.hadoop.hdds.utils.db.DBStoreBuilder;
 import org.apache.hadoop.ozone.ClientVersion;
@@ -64,18 +73,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-
-import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.ReplicationFactor.ONE;
-import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.ReplicationFactor.THREE;
-import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.ReplicationType.RATIS;
-import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.ReplicationType.STAND_ALONE;
-import static org.apache.hadoop.hdds.scm.ScmConfigKeys.OZONE_DATANODE_RATIS_VOLUME_FREE_SPACE_MIN;
-import static org.apache.hadoop.hdds.scm.ScmConfigKeys.OZONE_DATANODE_PIPELINE_LIMIT;
-import static org.apache.hadoop.hdds.scm.net.NetConstants.LEAF_SCHEMA;
-import static org.apache.hadoop.hdds.scm.net.NetConstants.RACK_SCHEMA;
-import static org.apache.hadoop.hdds.scm.net.NetConstants.ROOT_SCHEMA;
 
 /**
  * Test for PipelinePlacementPolicy.
@@ -97,11 +94,12 @@ public class TestPipelinePlacementPolicy {
 
   @BeforeEach
   public void init() throws Exception {
+    conf = SCMTestUtils.getConf();
+
     cluster = initTopology();
     // start with nodes with rack awareness.
     nodeManager = new MockNodeManager(cluster, getNodesWithRackAwareness(),
         false, PIPELINE_PLACEMENT_MAX_NODES_COUNT);
-    conf = SCMTestUtils.getConf();
     conf.setInt(OZONE_DATANODE_PIPELINE_LIMIT, PIPELINE_LOAD_LIMIT);
     conf.setStorageSize(OZONE_DATANODE_RATIS_VOLUME_FREE_SPACE_MIN,
         10, StorageUnit.MB);
@@ -118,8 +116,12 @@ public class TestPipelinePlacementPolicy {
         .setNodeManager(nodeManager)
         .setSCMDBTransactionBuffer(scmhaManager.getDBTransactionBuffer())
         .build();
+
     placementPolicy = new PipelinePlacementPolicy(
-        nodeManager, stateManager, conf);
+        nodeManager,
+        stateManager,
+        conf
+    );
   }
 
   @AfterEach
@@ -135,8 +137,9 @@ public class TestPipelinePlacementPolicy {
     NodeSchema[] schemas = new NodeSchema[]
         {ROOT_SCHEMA, RACK_SCHEMA, LEAF_SCHEMA};
     NodeSchemaManager.getInstance().init(schemas, true);
-    NetworkTopologyImpl topology =
-        new NetworkTopologyImpl(NodeSchemaManager.getInstance());
+
+    NetworkTopologyImpl topology = new NetworkTopologyImpl(NodeSchemaManager.getInstance(), conf);
+
     return topology;
   }
 
@@ -202,7 +205,11 @@ public class TestPipelinePlacementPolicy {
         .build();
 
     PipelinePlacementPolicy localPlacementPolicy = new PipelinePlacementPolicy(
-        localNodeManager, tempPipelineStateManager, conf);
+        localNodeManager,
+        tempPipelineStateManager,
+        conf
+    );
+
     int nodesRequired = HddsProtos.ReplicationFactor.THREE.getNumber();
     List<DatanodeDetails> results = localPlacementPolicy.chooseDatanodes(
         new ArrayList<>(datanodes.size()),
@@ -240,7 +247,11 @@ public class TestPipelinePlacementPolicy {
         .build();
 
     PipelinePlacementPolicy localPlacementPolicy = new PipelinePlacementPolicy(
-        localNodeManager, tempPipelineStateManager, conf);
+        localNodeManager,
+        tempPipelineStateManager,
+        conf
+    );
+
     int nodesRequired = HddsProtos.ReplicationFactor.THREE.getNumber();
 
     String expectedMessageSubstring = "Unable to find enough nodes that meet " +
@@ -482,7 +493,10 @@ public class TestPipelinePlacementPolicy {
     nodeManager = new MockNodeManager(cluster, getNodesWithRackAwareness(),
         false, PIPELINE_PLACEMENT_MAX_NODES_COUNT);
     placementPolicy = new PipelinePlacementPolicy(
-        nodeManager, stateManager, conf);
+        nodeManager,
+        stateManager,
+        conf
+    );
 
     List<DatanodeDetails> dns = new ArrayList<>();
     dns.add(MockDatanodeDetails
@@ -535,7 +549,10 @@ public class TestPipelinePlacementPolicy {
     nodeManager = new MockNodeManager(cluster, new ArrayList<>(),
         false, PIPELINE_PLACEMENT_MAX_NODES_COUNT);
     placementPolicy = new PipelinePlacementPolicy(
-        nodeManager, stateManager, conf);
+        nodeManager,
+        stateManager,
+        conf
+    );
 
     List<DatanodeDetails> dns = new ArrayList<>();
     dns.add(MockDatanodeDetails
@@ -627,7 +644,11 @@ public class TestPipelinePlacementPolicy {
     nodeManager = new MockNodeManager(cluster, dns,
         false, PIPELINE_PLACEMENT_MAX_NODES_COUNT);
     placementPolicy = new PipelinePlacementPolicy(
-        nodeManager, stateManager, conf);
+        nodeManager,
+        stateManager,
+        conf
+    );
+
     return dns;
   }
 

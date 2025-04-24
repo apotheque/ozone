@@ -19,6 +19,16 @@
 package org.apache.hadoop.hdds.scm.container.replication;
 
 import com.google.common.collect.ImmutableList;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hdds.client.RatisReplicationConfig;
 import org.apache.hadoop.hdds.client.ReplicationFactor;
@@ -29,16 +39,18 @@ import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerDatanodeProtocolProtos;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerDatanodeProtocolProtos.ContainerReplicaProto.State;
 import org.apache.hadoop.hdds.scm.PlacementPolicy;
-import org.apache.hadoop.hdds.scm.ScmUtils;
 import org.apache.hadoop.hdds.scm.container.ContainerInfo;
 import org.apache.hadoop.hdds.scm.container.ContainerReplica;
 import org.apache.hadoop.hdds.scm.container.replication.ContainerHealthResult.UnderReplicatedHealthResult;
 import org.apache.hadoop.hdds.scm.container.replication.ReplicationManager.ReplicationManagerConfiguration;
+import org.apache.hadoop.hdds.scm.net.NetworkTopology;
 import org.apache.hadoop.hdds.scm.node.NodeManager;
 import org.apache.hadoop.hdds.scm.node.NodeStatus;
 import org.apache.hadoop.hdds.scm.node.states.NodeNotFoundException;
 import org.apache.hadoop.hdds.scm.pipeline.InsufficientDatanodesException;
+import org.apache.hadoop.ozone.OzoneConfigKeys;
 import org.apache.hadoop.ozone.container.common.SCMTestUtils;
+import org.apache.hadoop.ozone.net.RandomMappingGenerator;
 import org.apache.hadoop.ozone.protocol.commands.SCMCommand;
 import org.apache.ratis.protocol.exceptions.NotLeaderException;
 import org.junit.jupiter.api.Assertions;
@@ -50,26 +62,17 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-
+import static java.util.Collections.emptyList;
+import static org.apache.hadoop.hdds.DFSConfigKeysLegacy.NET_TOPOLOGY_NODE_SWITCH_MAPPING_IMPL_KEY;
 import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.NodeOperationalState.DECOMMISSIONING;
 import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.NodeOperationalState.ENTERING_MAINTENANCE;
 import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.NodeOperationalState.IN_MAINTENANCE;
 import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.NodeOperationalState.IN_SERVICE;
 import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.ReplicationFactor.THREE;
-import static org.apache.hadoop.hdds.scm.ScmConfigKeys.OZONE_SCM_DC_DATANODE_MAPPING_KEY;
 import static org.apache.hadoop.hdds.scm.container.replication.ReplicationTestUtil.createContainer;
 import static org.apache.hadoop.hdds.scm.container.replication.ReplicationTestUtil.createContainerInfo;
 import static org.apache.hadoop.hdds.scm.container.replication.ReplicationTestUtil.createContainerReplica;
+import static org.apache.hadoop.hdds.scm.container.replication.ReplicationTestUtil.createNetworkTopology;
 import static org.apache.hadoop.hdds.scm.container.replication.ReplicationTestUtil.createReplicas;
 import static org.apache.hadoop.hdds.scm.container.replication.ReplicationTestUtil.createReplicasAcrossDcs;
 import static org.apache.hadoop.ozone.OzoneConfigKeys.OZONE_REPLICATION;
@@ -96,6 +99,7 @@ public class TestRatisUnderReplicationHandler {
   private ReplicationManager replicationManager;
   private Set<Pair<DatanodeDetails, SCMCommand<?>>> commandsSent;
   private ReplicationManagerMetrics metrics;
+  private NetworkTopology networkTopology;
 
   @BeforeEach
   public void setup() throws NodeNotFoundException,
@@ -135,6 +139,10 @@ public class TestRatisUnderReplicationHandler {
         commandsSent);
     ReplicationTestUtil.mockRMSendDeleteCommand(replicationManager,
         commandsSent);
+
+    conf.setInt(OzoneConfigKeys.OZONE_NETWORK_TOPOLOGY_CLUSTER_SEPARATION_LEVEL, 2);
+
+    networkTopology = createNetworkTopology(conf);
   }
 
   /**
@@ -160,7 +168,7 @@ public class TestRatisUnderReplicationHandler {
    */
   @Test
   public void testUnderReplicatedAndUnrecoverable() throws IOException {
-    testProcessing(Collections.emptySet(), Collections.emptyList(),
+    testProcessing(Collections.emptySet(), emptyList(),
         getUnderReplicatedHealthResult(), 2, 0);
   }
 
@@ -172,13 +180,22 @@ public class TestRatisUnderReplicationHandler {
   @ValueSource(ints = {1, 2, 3})
   public void testUnderReplicatedAndUnrecoverableAcrossDcs(int removedCount) throws IOException {
     conf.set(OZONE_REPLICATION, ReplicationFactor.THREE.toString());
-    conf.set(OZONE_SCM_DC_DATANODE_MAPPING_KEY, "localhost:0=dc0,localhost:1=dc1,localhost:2=dc2");
-    Set<String> dcMapping = new HashSet<>(ScmUtils.getDcMapping(conf).values());
+    conf.set(NET_TOPOLOGY_NODE_SWITCH_MAPPING_IMPL_KEY, "org.apache.hadoop.ozone.net.RandomMappingGenerator");
+    conf.setInt(OzoneConfigKeys.OZONE_NETWORK_TOPOLOGY_CLUSTER_SEPARATION_LEVEL, 2);
+
     container = ReplicationTestUtil.createContainer(
-        HddsProtos.LifeCycleState.CLOSED, RATIS_REPLICATION_CONFIG, dcMapping);
+        HddsProtos.LifeCycleState.CLOSED,
+        RATIS_REPLICATION_CONFIG,
+        RandomMappingGenerator.AVAILABLE_DCS
+    );
 
     // generate 3 replicas spread across 3 datacenters
-    Set<ContainerReplica> replicas = createReplicasAcrossDcs(container.containerID(), State.CLOSED, conf);
+    Set<ContainerReplica> replicas = createReplicasAcrossDcs(
+        container.containerID(),
+        State.CLOSED,
+        conf,
+        networkTopology
+    );
 
     // remove the specified number of replicas
     Iterator<ContainerReplica> iterator = replicas.iterator();
@@ -187,7 +204,7 @@ public class TestRatisUnderReplicationHandler {
       iterator.remove();
     }
 
-    testProcessing(replicas, Collections.emptyList(),
+    testProcessing(replicas, emptyList(),
         getUnderReplicatedHealthResult(), 2, 0);
   }
 
@@ -202,44 +219,55 @@ public class TestRatisUnderReplicationHandler {
       "1, 1, 0", // 1st and 2nd dcs are recoverable, 2 commands should be sent
       "1, 1, 1" // all dcs are recoverable, 3 commands should be sent
   })
-  public void testUnderReplicatedAndRecoverableAcrossDcs(int keepInDc1, int keepInDc2,
-                                                         int keepInDc3) throws IOException {
+  public void testUnderReplicatedAndRecoverableAcrossDcs(int limitForDc1, int limitForDc2, int limitForDc3)
+      throws IOException {
+    conf.set(NET_TOPOLOGY_NODE_SWITCH_MAPPING_IMPL_KEY, "org.apache.hadoop.ozone.net.RandomMappingGenerator");
+
     ReplicationFactor replicationFactor = ReplicationFactor.SIX;
     conf.set(OZONE_REPLICATION, replicationFactor.toString());
-    conf.set(OZONE_SCM_DC_DATANODE_MAPPING_KEY,
-        "null:0=dc0,null:1=dc0,null:2=dc1,null:3=dc1,null:4=dc2,null:5=dc2");
-    Map<String, String> dcMapping = ScmUtils.getDcMapping(conf);
+
     container = ReplicationTestUtil.createContainer(
-        HddsProtos.LifeCycleState.CLOSED, RatisReplicationConfig.getInstance(replicationFactor.toProto()),
-        new HashSet<>(dcMapping.values()));
+        HddsProtos.LifeCycleState.CLOSED,
+        RatisReplicationConfig.getInstance(replicationFactor.toProto()),
+        RandomMappingGenerator.AVAILABLE_DCS
+    );
 
     // generate 6 replicas spread across 3 datacenters
-    Map<String, List<ContainerReplica>> replicasByDc = createReplicasAcrossDcs(container.containerID(), State.CLOSED,
-        conf).stream()
-        .collect(Collectors.groupingBy(r -> {
-          DatanodeDetails node = r.getDatanodeDetails();
-          return node.getDc(dcMapping);
+    Map<String, List<ContainerReplica>> replicasByDc = createReplicasAcrossDcs(
+        container.containerID(),
+        State.CLOSED,
+        conf,
+        networkTopology
+    ).stream()
+        .collect(Collectors.groupingBy(replica -> {
+          DatanodeDetails node = replica.getDatanodeDetails();
+          return networkTopology.getRegionAncestor(node).getNetworkFullPath();
         }));
 
     // remove the specified number of replicas
     Set<ContainerReplica> replicas = new HashSet<>();
     for (Map.Entry<String, List<ContainerReplica>> entry : replicasByDc.entrySet()) {
       switch (entry.getKey()) {
-      case "dc0":
-        replicas.addAll(entry.getValue().stream().limit(keepInDc1).collect(Collectors.toList()));
+      case "/dc1":
+        replicas.addAll(entry.getValue().stream().limit(limitForDc1).collect(Collectors.toList()));
         break;
-      case "dc1":
-        replicas.addAll(entry.getValue().stream().limit(keepInDc2).collect(Collectors.toList()));
+      case "/dc2":
+        replicas.addAll(entry.getValue().stream().limit(limitForDc2).collect(Collectors.toList()));
         break;
-      case "dc2":
-        replicas.addAll(entry.getValue().stream().limit(keepInDc3).collect(Collectors.toList()));
+      case "/dc3":
+        replicas.addAll(entry.getValue().stream().limit(limitForDc3).collect(Collectors.toList()));
         break;
       default:
       }
     }
 
-    testProcessing(replicas, Collections.emptyList(),
-        getUnderReplicatedHealthResult(), 2, keepInDc1 + keepInDc2 + keepInDc3);
+    testProcessing(
+        replicas,
+        emptyList(),
+        getUnderReplicatedHealthResult(),
+        2,
+        limitForDc1 + limitForDc2 + limitForDc3
+    );
   }
 
   /**
@@ -270,7 +298,7 @@ public class TestRatisUnderReplicationHandler {
         .createReplicas(Pair.of(DECOMMISSIONING, 0), Pair.of(IN_SERVICE, 0),
             Pair.of(IN_SERVICE, 0));
 
-    testProcessing(replicas, Collections.emptyList(),
+    testProcessing(replicas, emptyList(),
         getUnderReplicatedHealthResult(), 2, 1);
   }
 
@@ -286,7 +314,7 @@ public class TestRatisUnderReplicationHandler {
         .createReplicas(Pair.of(ENTERING_MAINTENANCE, 0),
             Pair.of(IN_SERVICE, 0), Pair.of(IN_SERVICE, 0));
 
-    testProcessing(replicas, Collections.emptyList(),
+    testProcessing(replicas, emptyList(),
         getUnderReplicatedHealthResult(), 3, 1);
   }
 
@@ -301,7 +329,7 @@ public class TestRatisUnderReplicationHandler {
         .createReplicas(Pair.of(ENTERING_MAINTENANCE, 0),
             Pair.of(IN_SERVICE, 0), Pair.of(IN_SERVICE, 0));
 
-    testProcessing(replicas, Collections.emptyList(),
+    testProcessing(replicas, emptyList(),
         getUnderReplicatedHealthResult(), 2, 0);
   }
 
@@ -313,15 +341,19 @@ public class TestRatisUnderReplicationHandler {
   public void testNoTargetsFoundBecauseOfPlacementPolicy() {
     policy = ReplicationTestUtil.getNoNodesTestPlacementPolicy(nodeManager,
         conf);
-    RatisUnderReplicationHandler handler =
-        new RatisUnderReplicationHandler(policy, conf, replicationManager);
+    RatisUnderReplicationHandler handler = new RatisUnderReplicationHandler(
+        policy,
+        conf,
+        replicationManager,
+        networkTopology
+    );
 
     Set<ContainerReplica> replicas
         = createReplicas(container.containerID(), State.CLOSED, 0, 0);
 
     assertThrows(IOException.class,
         () -> handler.processAndSendCommands(replicas,
-            Collections.emptyList(), getUnderReplicatedHealthResult(), 2));
+            emptyList(), getUnderReplicatedHealthResult(), 2));
     assertEquals(0, commandsSent.size());
     assertEquals(0, metrics.getPartialReplicationTotal());
   }
@@ -330,8 +362,12 @@ public class TestRatisUnderReplicationHandler {
   public void testInsufficientTargetsFoundBecauseOfPlacementPolicy() {
     policy = ReplicationTestUtil.getInsufficientNodesTestPlacementPolicy(
         nodeManager, conf, 2);
-    RatisUnderReplicationHandler handler =
-        new RatisUnderReplicationHandler(policy, conf, replicationManager);
+    RatisUnderReplicationHandler handler = new RatisUnderReplicationHandler(
+        policy,
+        conf,
+        replicationManager,
+        networkTopology
+    );
 
     // Only one replica is available, so we need to create 2 new ones.
     Set<ContainerReplica> replicas
@@ -339,7 +375,7 @@ public class TestRatisUnderReplicationHandler {
 
     assertThrows(InsufficientDatanodesException.class,
         () -> handler.processAndSendCommands(replicas,
-            Collections.emptyList(), getUnderReplicatedHealthResult(), 2));
+            emptyList(), getUnderReplicatedHealthResult(), 2));
     // One command should be sent to the replication manager as we could only
     // fine one node rather than two.
     assertEquals(1, commandsSent.size());
@@ -350,8 +386,12 @@ public class TestRatisUnderReplicationHandler {
   public void testNoTargetsFoundBecauseOfPlacementPolicyRemoveNone() {
     policy = ReplicationTestUtil.getNoNodesTestPlacementPolicy(nodeManager,
         conf);
-    RatisUnderReplicationHandler handler =
-        new RatisUnderReplicationHandler(policy, conf, replicationManager);
+    RatisUnderReplicationHandler handler = new RatisUnderReplicationHandler(
+        policy,
+        conf,
+        replicationManager,
+        networkTopology
+    );
 
     Set<ContainerReplica> replicas
         = createReplicas(container.containerID(), State.CLOSED, 0);
@@ -362,7 +402,7 @@ public class TestRatisUnderReplicationHandler {
 
     assertThrows(IOException.class,
         () -> handler.processAndSendCommands(replicas,
-            Collections.emptyList(), getUnderReplicatedHealthResult(), 2));
+            emptyList(), getUnderReplicatedHealthResult(), 2));
     // No commands send, as there are only 2 replicas available.
     assertEquals(0, commandsSent.size());
   }
@@ -371,8 +411,12 @@ public class TestRatisUnderReplicationHandler {
   public void testNoTargetsFoundBecauseOfPlacementPolicyNoneHealthy() {
     policy = ReplicationTestUtil.getNoNodesTestPlacementPolicy(nodeManager,
         conf);
-    RatisUnderReplicationHandler handler =
-        new RatisUnderReplicationHandler(policy, conf, replicationManager);
+    RatisUnderReplicationHandler handler = new RatisUnderReplicationHandler(
+        policy,
+        conf,
+        replicationManager,
+        networkTopology
+    );
 
     // All replicas UNHEALTHY so we do nothing.
     Set<ContainerReplica> replicas
@@ -380,7 +424,7 @@ public class TestRatisUnderReplicationHandler {
 
     assertThrows(IOException.class,
         () -> handler.processAndSendCommands(replicas,
-            Collections.emptyList(), getUnderReplicatedHealthResult(), 2));
+            emptyList(), getUnderReplicatedHealthResult(), 2));
     // No commands send, as no CLOSED replicas available.
     assertEquals(0, commandsSent.size());
   }
@@ -389,8 +433,12 @@ public class TestRatisUnderReplicationHandler {
   public void testNoTargetsFoundBecauseOfPlacementPolicyRemoveUnhealthy() {
     policy = ReplicationTestUtil.getNoNodesTestPlacementPolicy(nodeManager,
         conf);
-    RatisUnderReplicationHandler handler =
-        new RatisUnderReplicationHandler(policy, conf, replicationManager);
+    RatisUnderReplicationHandler handler = new RatisUnderReplicationHandler(
+        policy,
+        conf,
+        replicationManager,
+        networkTopology
+    );
 
     Set<ContainerReplica> replicas
         = createReplicas(container.containerID(), State.CLOSED, 0, 0);
@@ -401,7 +449,7 @@ public class TestRatisUnderReplicationHandler {
 
     assertThrows(IOException.class,
         () -> handler.processAndSendCommands(replicas,
-            Collections.emptyList(), getUnderReplicatedHealthResult(), 2));
+            emptyList(), getUnderReplicatedHealthResult(), 2));
     assertEquals(1, commandsSent.size());
     Pair<DatanodeDetails, SCMCommand<?>> cmd = commandsSent.iterator().next();
     assertEquals(shouldDelete.getDatanodeDetails(), cmd.getKey());
@@ -413,8 +461,12 @@ public class TestRatisUnderReplicationHandler {
   public void testNoTargetsFoundBecauseOfPlacementPolicyPendingDelete() {
     policy = ReplicationTestUtil.getNoNodesTestPlacementPolicy(nodeManager,
         conf);
-    RatisUnderReplicationHandler handler =
-        new RatisUnderReplicationHandler(policy, conf, replicationManager);
+    RatisUnderReplicationHandler handler = new RatisUnderReplicationHandler(
+        policy,
+        conf,
+        replicationManager,
+        networkTopology
+    );
 
     Set<ContainerReplica> replicas
         = createReplicas(container.containerID(), State.CLOSED, 0, 0);
@@ -438,8 +490,12 @@ public class TestRatisUnderReplicationHandler {
   public void testNoTargetsFoundRemoveQuasiClosedWithLowestSeq() {
     policy = ReplicationTestUtil.getNoNodesTestPlacementPolicy(nodeManager,
         conf);
-    RatisUnderReplicationHandler handler =
-        new RatisUnderReplicationHandler(policy, conf, replicationManager);
+    RatisUnderReplicationHandler handler = new RatisUnderReplicationHandler(
+        policy,
+        conf,
+        replicationManager,
+        networkTopology
+    );
 
     long sequenceID = 10;
     container = ReplicationTestUtil.createContainerInfo(
@@ -461,7 +517,7 @@ public class TestRatisUnderReplicationHandler {
 
     assertThrows(IOException.class,
         () -> handler.processAndSendCommands(replicas,
-            Collections.emptyList(), getUnderReplicatedHealthResult(), 2));
+            emptyList(), getUnderReplicatedHealthResult(), 2));
     assertEquals(1, commandsSent.size());
     Pair<DatanodeDetails, SCMCommand<?>> cmd = commandsSent.iterator().next();
     assertEquals(shouldDelete.getDatanodeDetails(), cmd.getKey());
@@ -490,7 +546,7 @@ public class TestRatisUnderReplicationHandler {
     replicas.addAll(createReplicas(container.containerID(), State.UNHEALTHY,
         Pair.of(DECOMMISSIONING, 0)));
 
-    testProcessing(replicas, Collections.emptyList(),
+    testProcessing(replicas, emptyList(),
         getUnderReplicatedHealthResult(), 2, 1);
   }
 
@@ -504,7 +560,7 @@ public class TestRatisUnderReplicationHandler {
     replicas.add(closedReplica);
 
     Set<Pair<DatanodeDetails, SCMCommand<?>>> commands =
-        testProcessing(replicas, Collections.emptyList(),
+        testProcessing(replicas, emptyList(),
             getUnderReplicatedHealthResult(), 2, 2);
     commands.forEach(
         command -> assertEquals(closedReplica.getDatanodeDetails(),
@@ -527,7 +583,7 @@ public class TestRatisUnderReplicationHandler {
     replicas.add(unhealthyReplica);
 
     Set<Pair<DatanodeDetails, SCMCommand<?>>> commands =
-        testProcessing(replicas, Collections.emptyList(),
+        testProcessing(replicas, emptyList(),
             getUnderReplicatedHealthResult(), 2, 1);
     commands.forEach(
         command -> assertNotEquals(unhealthyReplica.getDatanodeDetails(),
@@ -543,7 +599,7 @@ public class TestRatisUnderReplicationHandler {
         container.containerID(), 0, IN_SERVICE, State.CLOSED, 2);
     replicas.add(valid);
 
-    testProcessing(replicas, Collections.emptyList(),
+    testProcessing(replicas, emptyList(),
         getUnderReplicatedHealthResult(), 2, 1);
 
     // Ensure that the replica with SEQ=2 is the only source sent
@@ -567,8 +623,12 @@ public class TestRatisUnderReplicationHandler {
     ArgumentCaptor<List<DatanodeDetails>> excludedNodesCaptor =
         ArgumentCaptor.forClass(List.class);
 
-    RatisUnderReplicationHandler handler =
-        new RatisUnderReplicationHandler(mockPolicy, conf, replicationManager);
+    RatisUnderReplicationHandler handler = new RatisUnderReplicationHandler(
+        mockPolicy,
+        conf,
+        replicationManager,
+        networkTopology
+    );
 
     Set<ContainerReplica> replicas = new HashSet<>();
     ContainerReplica good = createContainerReplica(container.containerID(), 0,
@@ -634,7 +694,7 @@ public class TestRatisUnderReplicationHandler {
     replicas.add(quasiClosedReplica);
 
     final Set<Pair<DatanodeDetails, SCMCommand<?>>> commands =
-        testProcessing(replicas, Collections.emptyList(),
+        testProcessing(replicas, emptyList(),
             getUnderReplicatedHealthResult(), 2, 2);
     commands.forEach(
         command -> assertNotEquals(
@@ -665,7 +725,7 @@ public class TestRatisUnderReplicationHandler {
     UnderReplicatedHealthResult result = getUnderReplicatedHealthResult();
     Mockito.when(result.hasVulnerableUnhealthy()).thenReturn(true);
 
-    final Set<Pair<DatanodeDetails, SCMCommand<?>>> commands = testProcessing(replicas, Collections.emptyList(),
+    final Set<Pair<DatanodeDetails, SCMCommand<?>>> commands = testProcessing(replicas, emptyList(),
         result, 2, 1);
     assertEquals(unhealthyReplica.getDatanodeDetails(), commands.iterator().next().getKey());
   }
@@ -694,7 +754,7 @@ public class TestRatisUnderReplicationHandler {
     UnderReplicatedHealthResult result = getUnderReplicatedHealthResult();
     Mockito.when(result.hasVulnerableUnhealthy()).thenReturn(true);
 
-    final Set<Pair<DatanodeDetails, SCMCommand<?>>> commands = testProcessing(replicas, Collections.emptyList(),
+    final Set<Pair<DatanodeDetails, SCMCommand<?>>> commands = testProcessing(replicas, emptyList(),
         result, 2, 1);
     Assertions.assertEquals(unhealthyReplica.getDatanodeDetails(), commands.iterator().next().getKey());
   }
@@ -733,9 +793,15 @@ public class TestRatisUnderReplicationHandler {
     Mockito.when(result.hasVulnerableUnhealthy()).thenReturn(true);
     ReplicationTestUtil.mockRMSendThrottleReplicateCommand(replicationManager, commandsSent, new AtomicBoolean(true));
 
-    RatisUnderReplicationHandler handler = new RatisUnderReplicationHandler(policy, conf, replicationManager);
+    RatisUnderReplicationHandler handler = new RatisUnderReplicationHandler(
+        policy,
+        conf,
+        replicationManager,
+        networkTopology
+    );
+
     assertThrows(CommandTargetOverloadedException.class, () -> handler.processAndSendCommands(replicas,
-        Collections.emptyList(), result, 2));
+        emptyList(), result, 2));
     assertEquals(1, commandsSent.size());
     DatanodeDetails dn = commandsSent.iterator().next().getKey();
     assertTrue(unhealthyReplica.getDatanodeDetails().equals(dn) || unhealthyReplica2.getDatanodeDetails().equals(dn));
@@ -755,7 +821,7 @@ public class TestRatisUnderReplicationHandler {
     replicas.add(quasiClosedReplica);
 
     final Set<Pair<DatanodeDetails, SCMCommand<?>>> commands =
-        testProcessing(replicas, Collections.emptyList(),
+        testProcessing(replicas, emptyList(),
             getUnderReplicatedHealthResult(), 2, 2);
     commands.forEach(
         command -> assertEquals(
@@ -778,7 +844,7 @@ public class TestRatisUnderReplicationHandler {
             IN_SERVICE, State.QUASI_CLOSED, 1));
 
     final Set<Pair<DatanodeDetails, SCMCommand<?>>> commands =
-        testProcessing(replicas, Collections.emptyList(),
+        testProcessing(replicas, emptyList(),
             getUnderReplicatedHealthResult(), 2, 1);
     commands.forEach(
         command -> assertEquals(closedReplica.getDatanodeDetails(),
@@ -795,7 +861,7 @@ public class TestRatisUnderReplicationHandler {
     replicas.add(createContainerReplica(container.containerID(), 0,
         IN_SERVICE, State.QUASI_CLOSED, 1));
 
-    testProcessing(replicas, Collections.emptyList(),
+    testProcessing(replicas, emptyList(),
         getUnderReplicatedHealthResult(), 2, 2);
 
     // test the same, but for a QUASI_CLOSED container
@@ -806,7 +872,7 @@ public class TestRatisUnderReplicationHandler {
         IN_SERVICE, State.QUASI_CLOSED, container.getSequenceId()));
 
     commandsSent.clear();
-    testProcessing(replicas, Collections.emptyList(),
+    testProcessing(replicas, emptyList(),
             getUnderReplicatedHealthResult(), 2, 2);
   }
 
@@ -827,8 +893,12 @@ public class TestRatisUnderReplicationHandler {
       Set<ContainerReplica> replicas, List<ContainerReplicaOp> pendingOps,
       ContainerHealthResult healthResult,
       int minHealthyForMaintenance, int expectNumCommands) throws IOException {
-    RatisUnderReplicationHandler handler =
-        new RatisUnderReplicationHandler(policy, conf, replicationManager);
+    RatisUnderReplicationHandler handler = new RatisUnderReplicationHandler(
+        policy,
+        conf,
+        replicationManager,
+        networkTopology
+    );
 
     handler.processAndSendCommands(replicas, pendingOps,
             healthResult, minHealthyForMaintenance);

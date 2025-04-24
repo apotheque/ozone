@@ -4360,18 +4360,6 @@
   </property>
 
   <property>
-    <name>ozone.scm.dc.datanode.mapping</name>
-    <value></value>
-    <tag>SCM</tag>
-    <description>
-      This property defines a mapping that associates each DataNode with its corresponding data center.
-      The mapping is specified as a comma-separated list of pairs in the format `hostname:ratis_port=dc_name`.
-      By establishing this association, Ozone can identify which data center a DataNode belongs to,
-      enabling more efficient storage management and data placement across data centers.
-    </description>
-  </property>
-
-  <property>
     <name>ozone.client.crossdc.read.allow</name>
     <value>true</value>
     <tag>CLIENT</tag>
@@ -4379,6 +4367,15 @@
       When enabled, this property allows clients to perform read operations against a bucket
       even if they are located outside the datacenter(s) associated with that bucket.
       This does not affect container placement or replication decisions.
+    </description>
+  </property>
+
+  <property>
+    <name>ozone.network.topology.cluster.separation.level</name>
+    <value>-1</value>
+    <tag>CLIENT</tag>
+    <description>
+      When this property is set, we will treat nodes at this level in the network topology as separate regions.
     </description>
   </property>
 </configuration>

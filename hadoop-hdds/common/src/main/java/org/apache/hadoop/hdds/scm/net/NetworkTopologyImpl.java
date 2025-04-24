@@ -17,6 +17,10 @@
  */
 package org.apache.hadoop.hdds.scm.net;
 
+import static org.apache.hadoop.hdds.scm.net.NetConstants.ANCESTOR_GENERATION_DEFAULT;
+import static org.apache.hadoop.hdds.scm.net.NetConstants.ROOT;
+import static org.apache.hadoop.hdds.scm.net.NetConstants.SCOPE_REVERSE_STR;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
@@ -33,12 +37,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.hdds.conf.ConfigurationSource;
+import org.apache.hadoop.ozone.OzoneConfigKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.hadoop.hdds.scm.net.NetConstants.ANCESTOR_GENERATION_DEFAULT;
-import static org.apache.hadoop.hdds.scm.net.NetConstants.ROOT;
-import static org.apache.hadoop.hdds.scm.net.NetConstants.SCOPE_REVERSE_STR;
 
 /**
  * The class represents a cluster of computers with a tree hierarchical
@@ -49,9 +50,6 @@ import static org.apache.hadoop.hdds.scm.net.NetConstants.SCOPE_REVERSE_STR;
 public class NetworkTopologyImpl implements NetworkTopology {
   public static final Logger LOG =
       LoggerFactory.getLogger(NetworkTopologyImpl.class);
-
-  // TODO: Should be extracted into configurable parameter.
-  private static final int READ_COST_LIMIT = 100;
 
   /** The Inner node crate factory. */
   private final InnerNode.Factory factory;
@@ -66,6 +64,8 @@ public class NetworkTopologyImpl implements NetworkTopology {
   /** Lock to coordinate cluster tree access. */
   private final ReadWriteLock netlock = new ReentrantReadWriteLock(true);
 
+  private final int clusterSeparationLevel;
+
   public NetworkTopologyImpl(ConfigurationSource conf) {
     schemaManager = NodeSchemaManager.getInstance();
     schemaManager.init(conf);
@@ -75,11 +75,33 @@ public class NetworkTopologyImpl implements NetworkTopology {
     clusterTree = factory.newInnerNode(ROOT, null, null,
         NetConstants.ROOT_LEVEL,
         schemaManager.getCost(NetConstants.ROOT_LEVEL));
+
+    clusterSeparationLevel = calculateClusterSeparationLevel(conf, maxLevel);
+  }
+
+  private static int calculateClusterSeparationLevel(ConfigurationSource conf, int maxLevel) {
+    int clusterSeparationLevel = conf.getInt(
+            OzoneConfigKeys.OZONE_NETWORK_TOPOLOGY_CLUSTER_SEPARATION_LEVEL,
+            OzoneConfigKeys.OZONE_NETWORK_TOPOLOGY_CLUSTER_SEPARATION_LEVEL_DEFAULT
+    );
+
+    if (clusterSeparationLevel > maxLevel) {
+      throw new IllegalArgumentException("Incorrect cluster separation level: " + clusterSeparationLevel);
+    }
+
+    if (clusterSeparationLevel < 0) {
+      clusterSeparationLevel = maxLevel;
+    }
+
+    return clusterSeparationLevel;
   }
 
   @VisibleForTesting
-  public NetworkTopologyImpl(NodeSchemaManager manager,
-                             Consumer<List<? extends Node>> shuffleOperation) {
+  public NetworkTopologyImpl(
+          NodeSchemaManager manager,
+          Consumer<List<? extends Node>> shuffleOperation,
+          ConfigurationSource conf
+  ) {
     schemaManager = manager;
     this.shuffleOperation = shuffleOperation;
     maxLevel = schemaManager.getMaxLevel();
@@ -87,11 +109,13 @@ public class NetworkTopologyImpl implements NetworkTopology {
     clusterTree = factory.newInnerNode(ROOT, null, null,
         NetConstants.ROOT_LEVEL,
         schemaManager.getCost(NetConstants.ROOT_LEVEL));
+
+    clusterSeparationLevel = calculateClusterSeparationLevel(conf, maxLevel);
   }
 
   @VisibleForTesting
-  public NetworkTopologyImpl(NodeSchemaManager manager) {
-    this(manager, Collections::shuffle);
+  public NetworkTopologyImpl(NodeSchemaManager manager, ConfigurationSource conf) {
+    this(manager, Collections::shuffle, conf);
   }
 
   /**
@@ -284,6 +308,17 @@ public class NetworkTopologyImpl implements NetworkTopology {
       return node.getAncestor(ancestorGen);
     } finally {
       netlock.readLock().unlock();
+    }
+  }
+
+  @Override
+  public Node getRegionAncestor(Node node) {
+    int nodeLevel = node.getLevel();
+
+    if (nodeLevel < clusterSeparationLevel) {
+      return node;
+    } else {
+      return getAncestor(node, nodeLevel - clusterSeparationLevel);
     }
   }
 
@@ -771,8 +806,7 @@ public class NetworkTopologyImpl implements NetworkTopology {
    * by activeLen parameter.
    */
   @Override
-  public <N extends Node> List<N> sortByDistanceCost(Node reader,
-      List<N> nodes, int activeLen, boolean forRead) {
+  public <N extends Node> List<N> sortByDistanceCost(Node reader, List<N> nodes, int activeLen) {
     // shuffle input list of nodes if reader is not defined
     if (reader == null) {
       List<N> shuffledNodes =
@@ -791,10 +825,8 @@ public class NetworkTopologyImpl implements NetworkTopology {
     for (int i = 0; i < activeLen; i++) {
       int cost = costs[i];
       N node = nodes.get(i);
-      if (cost < READ_COST_LIMIT || !forRead) {
-        tree.computeIfAbsent(cost, k -> Lists.newArrayListWithExpectedSize(1))
-                .add(node);
-      }
+      tree.computeIfAbsent(cost, k -> Lists.newArrayListWithExpectedSize(1))
+          .add(node);
     }
 
     List<N> ret = new ArrayList<>();
@@ -805,9 +837,7 @@ public class NetworkTopologyImpl implements NetworkTopology {
       }
     }
 
-    if (!forRead) {
-      Preconditions.checkState(ret.size() == activeLen,  "Wrong number of nodes sorted!");
-    }
+    Preconditions.checkState(ret.size() == activeLen, "Wrong number of nodes sorted!");
 
     return ret;
   }

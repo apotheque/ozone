@@ -23,6 +23,7 @@ import org.apache.hadoop.hdds.conf.OzoneConfiguration;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
 import org.apache.hadoop.hdds.scm.PlacementPolicyValidateProxy;
 import org.apache.hadoop.hdds.scm.container.ContainerManager;
+import org.apache.hadoop.hdds.scm.net.NetworkTopology;
 import org.apache.hadoop.hdds.scm.node.DatanodeUsageInfo;
 import org.apache.hadoop.hdds.scm.node.NodeManager;
 import org.jetbrains.annotations.NotNull;
@@ -42,8 +43,10 @@ public class FindTargetGreedyByUsageInfo extends AbstractFindTargetGreedy {
       ContainerManager containerManager,
       PlacementPolicyValidateProxy placementPolicyValidateProxy,
       NodeManager nodeManager,
-      OzoneConfiguration ozoneConfiguration) {
-    super(containerManager, placementPolicyValidateProxy, nodeManager, ozoneConfiguration);
+      OzoneConfiguration ozoneConfiguration,
+      NetworkTopology networkTopology
+  ) {
+    super(containerManager, placementPolicyValidateProxy, nodeManager, ozoneConfiguration, networkTopology);
     setLogger(LoggerFactory.getLogger(FindTargetGreedyByUsageInfo.class));
     setPotentialTargets(new TreeSet<>((a, b) -> compareByUsage(a, b)));
   }

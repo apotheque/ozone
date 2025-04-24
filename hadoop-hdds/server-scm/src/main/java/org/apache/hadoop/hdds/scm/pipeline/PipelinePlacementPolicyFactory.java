@@ -35,16 +35,23 @@ public final class PipelinePlacementPolicyFactory {
   private PipelinePlacementPolicyFactory() {
   }
 
-  public static PlacementPolicy getPolicy(NodeManager nodeManager,
-      PipelineStateManager stateManager, ConfigurationSource conf) {
-    final Class<? extends PlacementPolicy> clazz
-        = conf.getClass(OZONE_SCM_PIPELINE_PLACEMENT_IMPL_KEY,
-        PipelinePlacementPolicy.class, PlacementPolicy.class);
+  public static PlacementPolicy getPolicy(
+      NodeManager nodeManager,
+      PipelineStateManager stateManager,
+      ConfigurationSource conf
+  ) {
+    final Class<? extends PlacementPolicy> clazz = conf.getClass(
+        OZONE_SCM_PIPELINE_PLACEMENT_IMPL_KEY,
+        PipelinePlacementPolicy.class,
+        PlacementPolicy.class
+    );
 
     try {
-      return clazz.getDeclaredConstructor(NodeManager.class,
-              PipelineStateManager.class, ConfigurationSource.class)
-          .newInstance(nodeManager, stateManager, conf);
+      return clazz.getDeclaredConstructor(
+          NodeManager.class,
+          PipelineStateManager.class,
+          ConfigurationSource.class
+      ).newInstance(nodeManager, stateManager, conf);
     } catch (Exception e) {
       throw new RuntimeException("Failed to getPolicy for " + clazz, e);
     }

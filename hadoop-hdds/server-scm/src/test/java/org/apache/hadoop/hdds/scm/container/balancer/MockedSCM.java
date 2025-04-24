@@ -18,8 +18,20 @@
 
 package org.apache.hadoop.hdds.scm.container.balancer;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.google.protobuf.ByteString;
 import jakarta.annotation.Nonnull;
+import java.io.IOException;
+import java.time.Clock;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
 import org.apache.hadoop.hdds.conf.OzoneConfiguration;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
 import org.apache.hadoop.hdds.scm.PlacementPolicy;
@@ -44,19 +56,6 @@ import org.apache.hadoop.hdds.scm.node.states.NodeNotFoundException;
 import org.apache.hadoop.hdds.scm.server.StorageContainerManager;
 import org.apache.hadoop.hdds.server.events.EventPublisher;
 import org.mockito.Mockito;
-
-import java.io.IOException;
-import java.time.Clock;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeoutException;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * Class for test used for setting up testable StorageContainerManager.
@@ -119,6 +118,7 @@ public final class MockedSCM {
     when(scm.getClusterMap()).thenReturn(null);
     when(scm.getEventQueue()).thenReturn(mock(EventPublisher.class));
     when(scm.getStatefulServiceStateManager()).thenReturn(stateManager);
+    when(scm.getClusterMap()).thenReturn(mockNodeManager.getClusterNetworkTopologyMap());
   }
 
   @Override

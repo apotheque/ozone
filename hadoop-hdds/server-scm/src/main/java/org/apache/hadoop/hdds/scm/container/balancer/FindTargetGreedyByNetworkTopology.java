@@ -19,6 +19,10 @@
 package org.apache.hadoop.hdds.scm.container.balancer;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 import org.apache.hadoop.hdds.conf.OzoneConfiguration;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
 import org.apache.hadoop.hdds.scm.PlacementPolicyValidateProxy;
@@ -29,12 +33,6 @@ import org.apache.hadoop.hdds.scm.node.NodeManager;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-
 /**
  * an implementation of FindTargetGreedy, which will always select the
  * target with the shortest distance according to network topology
@@ -43,8 +41,8 @@ import java.util.List;
 public class FindTargetGreedyByNetworkTopology
     extends AbstractFindTargetGreedy {
 
-  private NetworkTopology networkTopology;
-  private List potentialTargets;
+  private final NetworkTopology networkTopology;
+  private final List<DatanodeUsageInfo> potentialTargets;
 
   public FindTargetGreedyByNetworkTopology(
           ContainerManager containerManager,
@@ -52,7 +50,7 @@ public class FindTargetGreedyByNetworkTopology
           NodeManager nodeManager,
           NetworkTopology networkTopology,
           OzoneConfiguration ozoneConfiguration) {
-    super(containerManager, placementPolicyValidateProxy, nodeManager, ozoneConfiguration);
+    super(containerManager, placementPolicyValidateProxy, nodeManager, ozoneConfiguration, networkTopology);
     setLogger(LoggerFactory.getLogger(FindTargetGreedyByNetworkTopology.class));
     potentialTargets = new LinkedList<>();
     setPotentialTargets(potentialTargets);
@@ -66,19 +64,18 @@ public class FindTargetGreedyByNetworkTopology
    */
   @VisibleForTesting
   public void sortTargetForSource(DatanodeDetails source) {
-    Collections.sort(potentialTargets,
-        (DatanodeUsageInfo da, DatanodeUsageInfo db) -> {
-        DatanodeDetails a = da.getDatanodeDetails();
-        DatanodeDetails b = db.getDatanodeDetails();
-        // sort by network topology first
-        int distanceToA = networkTopology.getDistanceCost(source, a);
-        int distanceToB = networkTopology.getDistanceCost(source, b);
-        if (distanceToA != distanceToB) {
-          return distanceToA - distanceToB;
-        }
-        // if distance to source is equal , sort by usage
-        return compareByUsage(da, db);
-      });
+    potentialTargets.sort((DatanodeUsageInfo da, DatanodeUsageInfo db) -> {
+      DatanodeDetails a = da.getDatanodeDetails();
+      DatanodeDetails b = db.getDatanodeDetails();
+      // sort by network topology first
+      int distanceToA = networkTopology.getDistanceCost(source, a);
+      int distanceToB = networkTopology.getDistanceCost(source, b);
+      if (distanceToA != distanceToB) {
+        return distanceToA - distanceToB;
+      }
+      // if distance to source is equal , sort by usage
+      return compareByUsage(da, db);
+    });
   }
 
   /**

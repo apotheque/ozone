@@ -18,6 +18,15 @@
 package org.apache.hadoop.hdds.scm.container.placement.algorithms;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.apache.hadoop.hdds.conf.ConfigurationSource;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
 import org.apache.hadoop.hdds.scm.ContainerPlacementStatus;
@@ -29,16 +38,6 @@ import org.apache.hadoop.hdds.scm.node.NodeManager;
 import org.apache.hadoop.hdds.scm.pipeline.PipelineStateManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import static org.apache.hadoop.hdds.scm.exceptions.SCMException.ResultCodes.FAILED_TO_FIND_SUITABLE_NODE;
 
@@ -83,11 +82,13 @@ public final class SCMContainerPlacementRackScatter
   /**
    * Constructor for Pipeline Provider Pipeline Placement with rack awareness.
    * @param nodeManager Node Manager
-   * @param stateManager State Manager
    * @param conf Configuration
    */
-  public SCMContainerPlacementRackScatter(NodeManager nodeManager,
-      PipelineStateManager stateManager, ConfigurationSource conf) {
+  public SCMContainerPlacementRackScatter(
+      NodeManager nodeManager,
+      PipelineStateManager stateManager,
+      ConfigurationSource conf
+  ) {
     super(nodeManager, conf);
     this.networkTopology = nodeManager.getClusterNetworkTopologyMap();
     this.metrics = null;

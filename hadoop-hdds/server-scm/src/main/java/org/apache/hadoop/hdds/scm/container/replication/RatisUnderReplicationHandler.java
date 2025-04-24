@@ -19,24 +19,6 @@
 package org.apache.hadoop.hdds.scm.container.replication;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.hadoop.hdds.conf.ConfigurationSource;
-import org.apache.hadoop.hdds.conf.StorageUnit;
-import org.apache.hadoop.hdds.protocol.DatanodeDetails;
-import org.apache.hadoop.hdds.protocol.proto.HddsProtos.LifeCycleState;
-import org.apache.hadoop.hdds.protocol.proto.StorageContainerDatanodeProtocolProtos.ContainerReplicaProto.State;
-import org.apache.hadoop.hdds.scm.PlacementPolicy;
-import org.apache.hadoop.hdds.scm.ScmConfigKeys;
-import org.apache.hadoop.hdds.scm.ScmUtils;
-import org.apache.hadoop.hdds.scm.container.ContainerInfo;
-import org.apache.hadoop.hdds.scm.container.ContainerReplica;
-import org.apache.hadoop.hdds.scm.exceptions.SCMException;
-import org.apache.hadoop.hdds.scm.node.states.NodeNotFoundException;
-import org.apache.hadoop.hdds.scm.pipeline.InsufficientDatanodesException;
-import org.apache.hadoop.ozone.protocol.commands.ReplicateContainerCommand;
-import org.apache.ratis.protocol.exceptions.NotLeaderException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
@@ -47,6 +29,25 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.hadoop.hdds.conf.ConfigurationSource;
+import org.apache.hadoop.hdds.conf.StorageUnit;
+import org.apache.hadoop.hdds.protocol.DatanodeDetails;
+import org.apache.hadoop.hdds.protocol.proto.HddsProtos.LifeCycleState;
+import org.apache.hadoop.hdds.protocol.proto.StorageContainerDatanodeProtocolProtos.ContainerReplicaProto.State;
+import org.apache.hadoop.hdds.scm.PlacementPolicy;
+import org.apache.hadoop.hdds.scm.ScmConfigKeys;
+import org.apache.hadoop.hdds.scm.container.ContainerInfo;
+import org.apache.hadoop.hdds.scm.container.ContainerReplica;
+import org.apache.hadoop.hdds.scm.exceptions.SCMException;
+import org.apache.hadoop.hdds.scm.net.NetworkTopology;
+import org.apache.hadoop.hdds.scm.node.states.NodeNotFoundException;
+import org.apache.hadoop.hdds.scm.pipeline.InsufficientDatanodesException;
+import org.apache.hadoop.ozone.protocol.commands.ReplicateContainerCommand;
+import org.apache.ratis.protocol.exceptions.NotLeaderException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.apache.hadoop.hdds.scm.container.replication.ReplicationManagerUtil.getReplicasByDc;
 
 /**
  * This class handles Ratis containers that are under replicated. It should
@@ -61,18 +62,21 @@ public class RatisUnderReplicationHandler
   private final long currentContainerSize;
   private final ReplicationManager replicationManager;
   private final ReplicationManagerMetrics metrics;
-  private final Map<String, String> dcMapping;
+  private final NetworkTopology networkTopology;
 
-  public RatisUnderReplicationHandler(final PlacementPolicy placementPolicy,
-      final ConfigurationSource conf,
-      final ReplicationManager replicationManager) {
+  public RatisUnderReplicationHandler(
+      PlacementPolicy placementPolicy,
+      ConfigurationSource conf,
+      ReplicationManager replicationManager,
+      NetworkTopology networkTopology
+  ) {
     this.placementPolicy = placementPolicy;
     this.currentContainerSize = (long) conf
         .getStorageSize(ScmConfigKeys.OZONE_SCM_CONTAINER_SIZE,
             ScmConfigKeys.OZONE_SCM_CONTAINER_SIZE_DEFAULT, StorageUnit.BYTES);
     this.replicationManager = replicationManager;
     this.metrics = replicationManager.getMetrics();
-    this.dcMapping = ScmUtils.getDcMapping(conf);
+    this.networkTopology = networkTopology;
   }
 
   /**
@@ -97,7 +101,7 @@ public class RatisUnderReplicationHandler
     if (result.getContainerInfo().getDatacenters().isEmpty()) {
       return processAndSendCommandsInternal(replicas, pendingOps, result, minHealthyForMaintenance);
     } else {
-      Map<String, Set<ContainerReplica>> replicasByDc = ReplicationManagerUtil.getReplicasByDc(replicas, dcMapping);
+      Map<String, Set<ContainerReplica>> replicasByDc = getReplicasByDc(replicas, networkTopology);
       int commandsSent = 0;
       for (Map.Entry<String, Set<ContainerReplica>> entry: replicasByDc.entrySet()) {
         commandsSent += processAndSendCommandsInternal(entry.getValue(), pendingOps, result, minHealthyForMaintenance);
@@ -272,7 +276,7 @@ public class RatisUnderReplicationHandler
         DatanodeDetails node = replica.getDatanodeDetails();
         target = ReplicationManagerUtil.getTargetDatanodes(placementPolicy, 1,
             excludedAndUsedNodes.getUsedNodes(), excludedAndUsedNodes.getExcludedNodes(),
-            new HashSet<>(Collections.singleton(node.getDc(dcMapping))),
+            new HashSet<>(Collections.singleton(networkTopology.getRegionAncestor(node).getNetworkName())),
             currentContainerSize, replicaCount.getContainer());
       }
 
@@ -505,7 +509,7 @@ public class RatisUnderReplicationHandler
       DatanodeDetails node = replicaCount.getReplicas().get(0).getDatanodeDetails();
       return ReplicationManagerUtil.getTargetDatanodes(placementPolicy,
           replicaCount.additionalReplicaNeeded(), used, excluded,
-          new HashSet<>(Collections.singleton(node.getDc(dcMapping))),
+          Collections.singleton(networkTopology.getRegionAncestor(node).getNetworkName()),
           currentContainerSize, replicaCount.getContainer());
     }
   }

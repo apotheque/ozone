@@ -58,6 +58,7 @@ import org.apache.hadoop.hdds.scm.container.replication.health.VulnerableUnhealt
 import org.apache.hadoop.hdds.scm.events.SCMEvents;
 import org.apache.hadoop.hdds.scm.ha.SCMContext;
 import org.apache.hadoop.hdds.scm.ha.SCMService;
+import org.apache.hadoop.hdds.scm.net.NetworkTopology;
 import org.apache.hadoop.hdds.scm.node.NodeManager;
 import org.apache.hadoop.hdds.scm.node.NodeStatus;
 import org.apache.hadoop.hdds.scm.node.states.NodeNotFoundException;
@@ -257,10 +258,22 @@ public class ReplicationManager implements SCMService, ContainerReplicaPendingOp
         new ECOverReplicationHandler(ecContainerPlacement, this);
     ecMisReplicationHandler = new ECMisReplicationHandler(ecContainerPlacement,
         conf, this);
+
+    NetworkTopology networkTopology = nodeManager.getClusterNetworkTopologyMap();
+
     ratisUnderReplicationHandler = new RatisUnderReplicationHandler(
-        ratisContainerPlacement, conf, this);
-    ratisOverReplicationHandler =
-        new RatisOverReplicationHandler(ratisContainerPlacement, conf, this);
+        ratisContainerPlacement,
+        conf,
+        this,
+        networkTopology
+    );
+
+    ratisOverReplicationHandler = new RatisOverReplicationHandler(
+        ratisContainerPlacement,
+        this,
+        networkTopology
+    );
+
     ratisMisReplicationHandler = new RatisMisReplicationHandler(
         ratisContainerPlacement, conf, this);
     underReplicatedProcessor =

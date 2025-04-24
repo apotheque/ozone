@@ -17,21 +17,6 @@
  */
 package org.apache.hadoop.hdds.scm.net;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import org.apache.hadoop.hdds.conf.OzoneConfiguration;
-import org.apache.hadoop.hdds.scm.ScmConfigKeys;
-
 import static org.apache.hadoop.hdds.scm.net.NetConstants.DATACENTER_SCHEMA;
 import static org.apache.hadoop.hdds.scm.net.NetConstants.LEAF_SCHEMA;
 import static org.apache.hadoop.hdds.scm.net.NetConstants.NODEGROUP_SCHEMA;
@@ -56,6 +41,19 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.apache.hadoop.hdds.conf.OzoneConfiguration;
+import org.apache.hadoop.hdds.scm.ScmConfigKeys;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -76,8 +74,12 @@ public class TestNetworkTopologyImpl {
   private Random random = new Random();
   private Consumer<List<? extends Node>> mockedShuffleOperation;
 
+  private OzoneConfiguration conf = new OzoneConfiguration();
+
   @BeforeEach
   void beforeAll() {
+    conf = new OzoneConfiguration();
+
     mockedShuffleOperation =
         Mockito.mock(Consumer.class);
     doAnswer(args -> {
@@ -90,9 +92,10 @@ public class TestNetworkTopologyImpl {
 
   public void initNetworkTopology(NodeSchema[] schemas, Node[] nodeArray) {
     NodeSchemaManager.getInstance().init(schemas, true);
-    cluster = new NetworkTopologyImpl(NodeSchemaManager.getInstance(),
-        mockedShuffleOperation);
+    cluster = new NetworkTopologyImpl(NodeSchemaManager.getInstance(), mockedShuffleOperation, conf);
+
     dataNodes = nodeArray.clone();
+
     for (int i = 0; i < dataNodes.length; i++) {
       cluster.add(dataNodes[i]);
     }
@@ -231,8 +234,9 @@ public class TestNetworkTopologyImpl {
     NodeSchema[] schemas =
         new NodeSchema[]{ROOT_SCHEMA, RACK_SCHEMA, LEAF_SCHEMA};
     NodeSchemaManager.getInstance().init(schemas, true);
-    NetworkTopology newCluster = new NetworkTopologyImpl(
-        NodeSchemaManager.getInstance(), mockedShuffleOperation);
+
+    NetworkTopology newCluster = new NetworkTopologyImpl(NodeSchemaManager.getInstance(), mockedShuffleOperation, conf);
+
     Node[] invalidDataNodes = new Node[] {
         createDatanode("1.1.1.1", "/r1"),
         createDatanode("2.2.2.2", "/r2"),
@@ -253,10 +257,8 @@ public class TestNetworkTopologyImpl {
   @Test
   public void testInitWithConfigFile() {
     ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-    OzoneConfiguration conf = new OzoneConfiguration();
     try {
-      String filePath = classLoader.getResource(
-          "./networkTopologyTestFiles/good.xml").getPath();
+      String filePath = classLoader.getResource("./networkTopologyTestFiles/good.xml").getPath();
       conf.set(ScmConfigKeys.OZONE_SCM_NETWORK_TOPOLOGY_SCHEMA_FILE, filePath);
       NetworkTopology newCluster = new NetworkTopologyImpl(conf);
       LOG.info("network topology max level = {}", newCluster.getMaxLevel());
@@ -788,8 +790,9 @@ public class TestNetworkTopologyImpl {
 
     NodeSchemaManager manager = NodeSchemaManager.getInstance();
     manager.init(schemas.toArray(new NodeSchema[0]), true);
-    NetworkTopology newCluster =
-        new NetworkTopologyImpl(manager, mockedShuffleOperation);
+
+    NetworkTopology newCluster = new NetworkTopologyImpl(manager, mockedShuffleOperation, conf);
+
     Node[] nodeList = new Node[] {
         createDatanode("1.1.1.1", "/r1/ng1"),
         createDatanode("2.2.2.2", "/r1/ng1"),
@@ -830,7 +833,9 @@ public class TestNetworkTopologyImpl {
         .setType(NodeSchema.LayerType.LEAF_NODE).build());
     manager = NodeSchemaManager.getInstance();
     manager.init(schemas.toArray(new NodeSchema[0]), true);
-    newCluster = new NetworkTopologyImpl(manager, mockedShuffleOperation);
+
+    newCluster = new NetworkTopologyImpl(manager, mockedShuffleOperation, conf);
+
     for (Node node: nodeList) {
       newCluster.add(node);
     }
@@ -972,8 +977,9 @@ public class TestNetworkTopologyImpl {
 
     NodeSchemaManager manager = NodeSchemaManager.getInstance();
     manager.init(schemas.toArray(new NodeSchema[0]), true);
-    NetworkTopology newCluster =
-        new NetworkTopologyImpl(manager, mockedShuffleOperation);
+
+    NetworkTopology newCluster = new NetworkTopologyImpl(manager, mockedShuffleOperation, conf);
+
     Node node = createDatanode("1.1.1.1", "/r1");
     newCluster.add(node);
     Node chosenNode =
@@ -997,8 +1003,9 @@ public class TestNetworkTopologyImpl {
 
     NodeSchemaManager manager = NodeSchemaManager.getInstance();
     manager.init(schemas.toArray(new NodeSchema[0]), true);
-    NetworkTopology newCluster =
-            new NetworkTopologyImpl(manager, mockedShuffleOperation);
+
+    NetworkTopology newCluster = new NetworkTopologyImpl(manager, mockedShuffleOperation, conf);
+
     Node node = createDatanode("1.1.1.1", "/d1/r1");
     newCluster.add(node);
     assertTrue(newCluster.contains(node));
@@ -1026,6 +1033,8 @@ public class TestNetworkTopologyImpl {
     newCluster.update(null, newNode3);
     assertTrue(newCluster.contains(newNode3));
   }
+
+  @Test
   public void testIsAncestor() {
     NodeImpl r1 = new NodeImpl("r1", "/", NODE_COST_DEFAULT);
     NodeImpl r12 = new NodeImpl("r12", "/", NODE_COST_DEFAULT);

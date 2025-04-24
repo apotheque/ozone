@@ -19,6 +19,15 @@
 package org.apache.hadoop.hdds.scm.container.replication;
 
 import com.google.common.collect.ImmutableList;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hdds.client.RatisReplicationConfig;
 import org.apache.hadoop.hdds.client.ReplicationFactor;
@@ -29,13 +38,15 @@ import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerDatanodeProtocolProtos.ContainerReplicaProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerDatanodeProtocolProtos.ContainerReplicaProto.State;
 import org.apache.hadoop.hdds.scm.PlacementPolicy;
-import org.apache.hadoop.hdds.scm.ScmUtils;
 import org.apache.hadoop.hdds.scm.container.ContainerInfo;
 import org.apache.hadoop.hdds.scm.container.ContainerReplica;
 import org.apache.hadoop.hdds.scm.container.placement.algorithms.ContainerPlacementStatusDefault;
+import org.apache.hadoop.hdds.scm.net.NetworkTopology;
 import org.apache.hadoop.hdds.scm.node.NodeStatus;
 import org.apache.hadoop.hdds.scm.node.states.NodeNotFoundException;
+import org.apache.hadoop.ozone.OzoneConfigKeys;
 import org.apache.hadoop.ozone.container.common.SCMTestUtils;
+import org.apache.hadoop.ozone.net.RandomMappingGenerator;
 import org.apache.hadoop.ozone.protocol.commands.DeleteContainerCommand;
 import org.apache.hadoop.ozone.protocol.commands.SCMCommand;
 import org.apache.ozone.test.GenericTestUtils;
@@ -48,21 +59,12 @@ import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 import org.slf4j.event.Level;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-
+import static org.apache.hadoop.hdds.DFSConfigKeysLegacy.NET_TOPOLOGY_NODE_SWITCH_MAPPING_IMPL_KEY;
 import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.NodeOperationalState.DECOMMISSIONING;
 import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.NodeOperationalState.IN_SERVICE;
-import static org.apache.hadoop.hdds.scm.ScmConfigKeys.OZONE_SCM_DC_DATANODE_MAPPING_KEY;
 import static org.apache.hadoop.hdds.scm.container.replication.ReplicationTestUtil.createContainer;
 import static org.apache.hadoop.hdds.scm.container.replication.ReplicationTestUtil.createContainerReplica;
+import static org.apache.hadoop.hdds.scm.container.replication.ReplicationTestUtil.createNetworkTopology;
 import static org.apache.hadoop.hdds.scm.container.replication.ReplicationTestUtil.createReplicas;
 import static org.apache.hadoop.hdds.scm.container.replication.ReplicationTestUtil.createReplicasAcrossDcs;
 import static org.apache.hadoop.hdds.scm.container.replication.ReplicationTestUtil.createReplicasWithSameOrigin;
@@ -81,6 +83,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
@@ -94,6 +97,7 @@ public class TestRatisOverReplicationHandler {
   private OzoneConfiguration conf;
   private ReplicationManager replicationManager;
   private Set<Pair<DatanodeDetails, SCMCommand<?>>> commandsSent;
+  private NetworkTopology networkTopology;
 
   @BeforeEach
   public void setup() throws NodeNotFoundException, NotLeaderException,
@@ -101,12 +105,15 @@ public class TestRatisOverReplicationHandler {
     container = createContainer(HddsProtos.LifeCycleState.CLOSED,
         RATIS_REPLICATION_CONFIG);
     conf = SCMTestUtils.getConf();
-    policy = Mockito.mock(PlacementPolicy.class);
+    conf.set(NET_TOPOLOGY_NODE_SWITCH_MAPPING_IMPL_KEY, "org.apache.hadoop.ozone.net.RandomMappingGenerator");
+    conf.setInt(OzoneConfigKeys.OZONE_NETWORK_TOPOLOGY_CLUSTER_SEPARATION_LEVEL, 2);
+
+    policy = mock(PlacementPolicy.class);
     when(policy.validateContainerPlacement(
         anyList(), Mockito.anyInt()))
         .thenReturn(new ContainerPlacementStatusDefault(2, 2, 3));
 
-    replicationManager = Mockito.mock(ReplicationManager.class);
+    replicationManager = mock(ReplicationManager.class);
     when(replicationManager.getNodeStatus(any(DatanodeDetails.class)))
         .thenAnswer(invocation -> {
           DatanodeDetails dd = invocation.getArgument(0);
@@ -119,6 +126,10 @@ public class TestRatisOverReplicationHandler {
         commandsSent);
 
     GenericTestUtils.setLogLevel(RatisOverReplicationHandler.LOG, Level.DEBUG);
+
+    conf.setInt(OzoneConfigKeys.OZONE_NETWORK_TOPOLOGY_CLUSTER_SEPARATION_LEVEL, 2);
+
+    networkTopology = createNetworkTopology(conf);
   }
 
   /**
@@ -168,44 +179,47 @@ public class TestRatisOverReplicationHandler {
       "1, 2, 1", // over replication in 2nd dc, should create 1 delete command
       "2, 2, 2", // over replication in every dc, should create 3 delete commands
   })
-  public void testOverReplicatedAcrossDcs(int keepInDc1, int keepInDc2,
-                                          int keepInDc3) throws IOException {
+  public void testOverReplicatedAcrossDcs(int limitForDc1, int limitForDc2, int limitForDc3) throws IOException {
     ReplicationFactor replicationFactor = ReplicationFactor.THREE;
     conf.set(OZONE_REPLICATION, replicationFactor.toString());
-    conf.set(OZONE_SCM_DC_DATANODE_MAPPING_KEY,
-        "null:0=dc0,null:1=dc0,null:2=dc1,null:3=dc1,null:4=dc2,null:5=dc2");
-    Map<String, String> dcMapping = ScmUtils.getDcMapping(conf);
+
     container = ReplicationTestUtil.createContainer(
-        HddsProtos.LifeCycleState.CLOSED, RatisReplicationConfig.getInstance(replicationFactor.toProto()),
-        new HashSet<>(dcMapping.values()));
+        HddsProtos.LifeCycleState.CLOSED,
+        RatisReplicationConfig.getInstance(replicationFactor.toProto()),
+        RandomMappingGenerator.AVAILABLE_DCS
+    );
 
     // generate 6 replicas spread across 3 datacenters
-    Map<String, List<ContainerReplica>> replicasByDc = createReplicasAcrossDcs(container.containerID(), State.CLOSED,
-        conf).stream()
-        .collect(Collectors.groupingBy(r -> {
-          DatanodeDetails node = r.getDatanodeDetails();
-          return node.getDc(dcMapping);
+    Map<String, List<ContainerReplica>> replicasByDc = createReplicasAcrossDcs(
+        container.containerID(),
+        State.CLOSED,
+        conf,
+        networkTopology
+    ).stream()
+        .collect(Collectors.groupingBy(replica -> {
+          DatanodeDetails node = replica.getDatanodeDetails();
+          return networkTopology.getRegionAncestor(node).getNetworkFullPath();
         }));
 
     // remove the specified number of replicas
     Set<ContainerReplica> replicas = new HashSet<>();
     for (Map.Entry<String, List<ContainerReplica>> entry : replicasByDc.entrySet()) {
       switch (entry.getKey()) {
-      case "dc0":
-        replicas.addAll(entry.getValue().stream().limit(keepInDc1).collect(Collectors.toList()));
+      case "/dc1":
+        replicas.addAll(entry.getValue().stream().limit(limitForDc1).collect(Collectors.toList()));
         break;
-      case "dc1":
-        replicas.addAll(entry.getValue().stream().limit(keepInDc2).collect(Collectors.toList()));
+      case "/dc2":
+        replicas.addAll(entry.getValue().stream().limit(limitForDc2).collect(Collectors.toList()));
         break;
-      case "dc2":
-        replicas.addAll(entry.getValue().stream().limit(keepInDc3).collect(Collectors.toList()));
+      case "/dc3":
+        replicas.addAll(entry.getValue().stream().limit(limitForDc3).collect(Collectors.toList()));
         break;
       default:
       }
     }
 
     testProcessing(replicas, Collections.emptyList(),
-        getOverReplicatedHealthResult(), keepInDc1 + keepInDc2 + keepInDc3 - 3);
+        getOverReplicatedHealthResult(), limitForDc1 + limitForDc2 + limitForDc3 - 3);
   }
 
   /**
@@ -540,7 +554,11 @@ public class TestRatisOverReplicationHandler {
     replicas.add(quasiClosedReplica);
     replicas.addAll(closedReplicas);
 
-    RatisOverReplicationHandler handler = new RatisOverReplicationHandler(policy, conf, replicationManager);
+    RatisOverReplicationHandler handler = new RatisOverReplicationHandler(
+        policy,
+        replicationManager,
+        mock(NetworkTopology.class)
+    );
 
     try {
       handler.processAndSendCommands(replicas, Collections.emptyList(),
@@ -580,8 +598,11 @@ public class TestRatisOverReplicationHandler {
     }).when(replicationManager)
         .sendThrottledDeleteCommand(any(), anyInt(), any(), anyBoolean());
 
-    RatisOverReplicationHandler handler =
-        new RatisOverReplicationHandler(policy, conf, replicationManager);
+    RatisOverReplicationHandler handler = new RatisOverReplicationHandler(
+        policy,
+        replicationManager,
+        mock(NetworkTopology.class)
+    );
 
     // Only 1 command should be sent, as the first call to sendThrottledDelete
     // throws an overloaded exception. Rather than skip to the next one, the skipped
@@ -608,8 +629,11 @@ public class TestRatisOverReplicationHandler {
       Set<ContainerReplica> replicas, List<ContainerReplicaOp> pendingOps,
       ContainerHealthResult healthResult,
       int expectNumCommands) throws IOException {
-    RatisOverReplicationHandler handler =
-        new RatisOverReplicationHandler(policy, conf, replicationManager);
+    RatisOverReplicationHandler handler = new RatisOverReplicationHandler(
+        policy,
+        replicationManager,
+        networkTopology
+    );
 
     handler.processAndSendCommands(replicas, pendingOps,
             healthResult, 2);
@@ -621,7 +645,7 @@ public class TestRatisOverReplicationHandler {
   private ContainerHealthResult.OverReplicatedHealthResult
       getOverReplicatedHealthResult() {
     ContainerHealthResult.OverReplicatedHealthResult healthResult =
-        Mockito.mock(ContainerHealthResult.OverReplicatedHealthResult.class);
+        mock(ContainerHealthResult.OverReplicatedHealthResult.class);
     when(healthResult.getContainerInfo()).thenReturn(container);
     return healthResult;
   }

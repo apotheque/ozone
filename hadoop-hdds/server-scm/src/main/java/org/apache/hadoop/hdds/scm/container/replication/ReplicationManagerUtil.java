@@ -17,18 +17,6 @@
  */
 package org.apache.hadoop.hdds.scm.container.replication;
 
-import org.apache.hadoop.hdds.protocol.DatanodeDetails;
-import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
-import org.apache.hadoop.hdds.protocol.proto.StorageContainerDatanodeProtocolProtos.ContainerReplicaProto;
-import org.apache.hadoop.hdds.scm.PlacementPolicy;
-import org.apache.hadoop.hdds.scm.container.ContainerInfo;
-import org.apache.hadoop.hdds.scm.container.ContainerReplica;
-import org.apache.hadoop.hdds.scm.exceptions.SCMException;
-import org.apache.hadoop.hdds.scm.node.NodeStatus;
-import org.apache.hadoop.hdds.scm.node.states.NodeNotFoundException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,8 +27,21 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.stream.Collectors;
+import org.apache.hadoop.hdds.protocol.DatanodeDetails;
+import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
+import org.apache.hadoop.hdds.protocol.proto.StorageContainerDatanodeProtocolProtos.ContainerReplicaProto;
+import org.apache.hadoop.hdds.scm.PlacementPolicy;
+import org.apache.hadoop.hdds.scm.container.ContainerInfo;
+import org.apache.hadoop.hdds.scm.container.ContainerReplica;
+import org.apache.hadoop.hdds.scm.exceptions.SCMException;
+import org.apache.hadoop.hdds.scm.net.NetworkTopology;
+import org.apache.hadoop.hdds.scm.node.NodeStatus;
+import org.apache.hadoop.hdds.scm.node.states.NodeNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.hadoop.hdds.scm.container.replication.ReplicationManager.compareState;
 
 /**
@@ -73,10 +74,15 @@ public final class ReplicationManagerUtil {
    *         return enough nodes.
    * @throws SCMException If no nodes can be selected.
    */
-  public static List<DatanodeDetails> getTargetDatanodes(PlacementPolicy policy,
-      int requiredNodes, List<DatanodeDetails> usedNodes,
-      List<DatanodeDetails> excludedNodes, Set<String> datacenters, long defaultContainerSize,
-      ContainerInfo container) throws SCMException {
+  public static List<DatanodeDetails> getTargetDatanodes(
+      PlacementPolicy policy,
+      int requiredNodes,
+      List<DatanodeDetails> usedNodes,
+      List<DatanodeDetails> excludedNodes,
+      Set<String> datacenters,
+      long defaultContainerSize,
+      ContainerInfo container
+  ) throws SCMException {
 
     // Ensure that target datanodes have enough space to hold a complete
     // container.
@@ -348,7 +354,7 @@ public final class ReplicationManagerUtil {
           return status != null && status.isHealthy() && status.isInService();
         })
         .map(ContainerReplica::getOriginDatanodeId)
-        .collect(Collectors.toSet());
+        .collect(toSet());
 
     /*
     In the case of {QUASI_CLOSED, QUASI_CLOSED, QUASI_CLOSED, UNHEALTHY}, if
@@ -386,9 +392,15 @@ public final class ReplicationManagerUtil {
    * @return A map of datacenter names to sets of replicas.
    */
   static Map<String, Set<ContainerReplica>> getReplicasByDc(
-      Collection<ContainerReplica> replicas, Map<String, String> dcMapping) {
+      Collection<ContainerReplica> replicas,
+      NetworkTopology networkTopology
+  ) {
     return replicas.stream()
-        .collect(Collectors.groupingBy(r -> r.getDatanodeDetails().getDc(dcMapping), Collectors.toSet()));
+        .collect(groupingBy(replica -> getDcNetworkPath(replica, networkTopology), toSet()));
+  }
+
+  private static String getDcNetworkPath(ContainerReplica replica, NetworkTopology networkTopology) {
+    return networkTopology.getRegionAncestor(replica.getDatanodeDetails()).getNetworkFullPath();
   }
 
   private static void checkUniqueness(Set<UUID> existingOriginNodeIDs,

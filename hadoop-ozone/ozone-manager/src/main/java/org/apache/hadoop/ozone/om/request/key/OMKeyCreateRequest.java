@@ -18,8 +18,20 @@
 
 package org.apache.hadoop.ozone.om.request.key;
 
+import static org.apache.hadoop.ozone.om.exceptions.OMException.ResultCodes.NOT_A_FILE;
+import static org.apache.hadoop.ozone.om.request.DatacenterUtils.resolveDatacenterMetadata;
+import static org.apache.hadoop.ozone.om.request.file.OMFileRequest.OMDirectoryResult.DIRECTORY_EXISTS;
+import static org.apache.hadoop.ozone.om.request.file.OMFileRequest.OMDirectoryResult.FILE_EXISTS_IN_GIVENPATH;
+
 import com.google.common.base.Preconditions;
-import org.apache.commons.lang3.StringUtils;
+import java.io.IOException;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.hadoop.hdds.client.ReplicationConfig;
 import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
 import org.apache.hadoop.hdds.scm.container.common.helpers.ExcludeList;
@@ -60,21 +72,6 @@ import org.apache.hadoop.ozone.security.acl.OzoneObj;
 import org.apache.hadoop.util.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static org.apache.hadoop.ozone.om.exceptions.OMException.ResultCodes.NOT_A_FILE;
-import static org.apache.hadoop.ozone.om.request.file.OMFileRequest.OMDirectoryResult.DIRECTORY_EXISTS;
-import static org.apache.hadoop.ozone.om.request.file.OMFileRequest.OMDirectoryResult.FILE_EXISTS_IN_GIVENPATH;
 
 /**
  * Handles CreateKey request.
@@ -136,11 +133,7 @@ public class OMKeyCreateRequest extends OMKeyRequest {
       final OmBucketInfo bucketInfo = ozoneManager
           .getBucketInfo(keyArgs.getVolumeName(), keyArgs.getBucketName());
 
-      Set<String> datacenters = Collections.emptySet();
-      final String datacentersMetadata = bucketInfo.getMetadata().get(OzoneConsts.DATACENTERS);
-      if (StringUtils.isNotEmpty(datacentersMetadata)) {
-        datacenters = Arrays.stream(datacentersMetadata.split(",")).collect(Collectors.toSet());
-      }
+      Set<String> datacenters = resolveDatacenterMetadata(bucketInfo.getMetadata().get(OzoneConsts.DATACENTERS));
 
       final ReplicationConfig repConfig = OzoneConfigUtil
           .resolveReplicationConfigPreference(type, factor,

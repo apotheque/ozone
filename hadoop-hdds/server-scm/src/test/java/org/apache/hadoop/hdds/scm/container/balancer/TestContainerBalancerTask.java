@@ -18,7 +18,29 @@
 
 package org.apache.hadoop.hdds.scm.container.balancer;
 
+import static org.apache.hadoop.hdds.scm.container.replication.ReplicationManager.ReplicationManagerConfiguration;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.when;
+
 import com.google.protobuf.ByteString;
+import java.io.IOException;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import org.apache.hadoop.conf.StorageUnit;
 import org.apache.hadoop.hdds.client.ECReplicationConfig;
 import org.apache.hadoop.hdds.client.RatisReplicationConfig;
@@ -61,29 +83,6 @@ import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
-
-import java.io.IOException;
-import java.time.Clock;
-import java.time.Duration;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
-
-import static org.apache.hadoop.hdds.scm.container.replication.ReplicationManager.ReplicationManagerConfiguration;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.when;
 
 /**
  * Tests for {@link ContainerBalancer}.
@@ -128,12 +127,12 @@ public class TestContainerBalancerTask {
       TimeoutException {
     conf = new OzoneConfiguration();
     rmConf = new ReplicationManagerConfiguration();
-    scm = Mockito.mock(StorageContainerManager.class);
-    containerManager = Mockito.mock(ContainerManager.class);
-    replicationManager = Mockito.mock(ReplicationManager.class);
-    serviceStateManager = Mockito.mock(StatefulServiceStateManagerImpl.class);
-    SCMServiceManager scmServiceManager = Mockito.mock(SCMServiceManager.class);
-    moveManager = Mockito.mock(MoveManager.class);
+    scm = mock(StorageContainerManager.class);
+    containerManager = mock(ContainerManager.class);
+    replicationManager = mock(ReplicationManager.class);
+    serviceStateManager = mock(StatefulServiceStateManagerImpl.class);
+    SCMServiceManager scmServiceManager = mock(SCMServiceManager.class);
+    moveManager = mock(MoveManager.class);
     Mockito.when(moveManager.move(any(ContainerID.class),
             any(DatanodeDetails.class), any(DatanodeDetails.class)))
         .thenReturn(CompletableFuture.completedFuture(
@@ -211,6 +210,7 @@ public class TestContainerBalancerTask {
     when(scm.getPlacementPolicyValidateProxy())
         .thenReturn(placementPolicyValidateProxy);
     when(scm.getMoveManager()).thenReturn(moveManager);
+    when(scm.getClusterMap()).thenReturn(mockNodeManager.getClusterNetworkTopologyMap());
 
     /*
     When StatefulServiceStateManager#saveConfiguration is called, save to
@@ -1209,9 +1209,7 @@ public class TestContainerBalancerTask {
         .build();
   }
 
-  private void startBalancer(ContainerBalancerConfiguration config)
-      throws IllegalContainerBalancerStateException, IOException,
-      InvalidContainerBalancerConfigurationException, TimeoutException {
+  private void startBalancer(ContainerBalancerConfiguration config) {
     containerBalancerTask.setConfig(config);
     containerBalancerTask.setTaskStatus(ContainerBalancerTask.Status.RUNNING);
     containerBalancerTask.run();

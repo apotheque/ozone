@@ -18,18 +18,7 @@
 
 package org.apache.hadoop.hdds.scm.container.replication;
 
-import org.apache.hadoop.hdds.conf.ConfigurationSource;
-import org.apache.hadoop.hdds.protocol.DatanodeDetails;
-import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
-import org.apache.hadoop.hdds.scm.ContainerPlacementStatus;
-import org.apache.hadoop.hdds.scm.PlacementPolicy;
-import org.apache.hadoop.hdds.scm.ScmUtils;
-import org.apache.hadoop.hdds.scm.container.ContainerInfo;
-import org.apache.hadoop.hdds.scm.container.ContainerReplica;
-import org.apache.hadoop.hdds.scm.node.states.NodeNotFoundException;
-import org.apache.ratis.protocol.exceptions.NotLeaderException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.apache.hadoop.hdds.scm.container.replication.ReplicationManagerUtil.getReplicasByDc;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,6 +29,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.hadoop.hdds.protocol.DatanodeDetails;
+import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
+import org.apache.hadoop.hdds.scm.ContainerPlacementStatus;
+import org.apache.hadoop.hdds.scm.PlacementPolicy;
+import org.apache.hadoop.hdds.scm.container.ContainerInfo;
+import org.apache.hadoop.hdds.scm.container.ContainerReplica;
+import org.apache.hadoop.hdds.scm.net.NetworkTopology;
+import org.apache.hadoop.hdds.scm.node.states.NodeNotFoundException;
+import org.apache.ratis.protocol.exceptions.NotLeaderException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class handles Ratis containers that are over replicated. It should
@@ -52,14 +52,17 @@ public class RatisOverReplicationHandler
       LoggerFactory.getLogger(RatisOverReplicationHandler.class);
 
   private final ReplicationManager replicationManager;
-  private final Map<String, String> dcMapping;
 
-  public RatisOverReplicationHandler(PlacementPolicy placementPolicy,
-                                     final ConfigurationSource conf,
-                                     ReplicationManager replicationManager) {
+  private final NetworkTopology networkTopology;
+
+  public RatisOverReplicationHandler(
+      PlacementPolicy placementPolicy,
+      ReplicationManager replicationManager,
+      NetworkTopology networkTopology
+  ) {
     super(placementPolicy);
     this.replicationManager = replicationManager;
-    this.dcMapping = ScmUtils.getDcMapping(conf);
+    this.networkTopology = networkTopology;
   }
 
   /**
@@ -86,7 +89,7 @@ public class RatisOverReplicationHandler
     if (result.getContainerInfo().getDatacenters().isEmpty()) {
       return processAndSendCommandsInternal(replicas, pendingOps, result, minHealthyForMaintenance);
     } else {
-      Map<String, Set<ContainerReplica>> replicasByDc = ReplicationManagerUtil.getReplicasByDc(replicas, dcMapping);
+      Map<String, Set<ContainerReplica>> replicasByDc = getReplicasByDc(replicas, networkTopology);
       int commandsSent = 0;
       for (Map.Entry<String, Set<ContainerReplica>> entry: replicasByDc.entrySet()) {
         commandsSent += processAndSendCommandsInternal(entry.getValue(), pendingOps, result, minHealthyForMaintenance);

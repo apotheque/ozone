@@ -152,8 +152,13 @@ public class PipelineManagerImpl implements PipelineManager {
         eventPublisher, scmContext, clock);
 
     // Create background thread.
-    BackgroundPipelineCreator backgroundPipelineCreator =
-        new BackgroundPipelineCreator(pipelineManager, conf, scmContext, clock);
+    BackgroundPipelineCreator backgroundPipelineCreator = new BackgroundPipelineCreator(
+        pipelineManager,
+        conf,
+        scmContext,
+        clock,
+        nodeManager.getClusterNetworkTopologyMap()
+    );
 
     pipelineManager.setBackgroundPipelineCreator(backgroundPipelineCreator);
     serviceManager.register(backgroundPipelineCreator);

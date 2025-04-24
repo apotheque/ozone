@@ -360,7 +360,7 @@ public class ContainerBalancerTask implements Runnable {
           nodeManager, networkTopology, ozoneConfiguration);
     } else {
       findTargetStrategy = new FindTargetGreedyByUsageInfo(containerManager,
-          placementPolicyValidateProxy, nodeManager, ozoneConfiguration);
+          placementPolicyValidateProxy, nodeManager, ozoneConfiguration, networkTopology);
     }
     this.excludeNodes = config.getExcludeNodes();
     this.includeNodes = config.getIncludeNodes();

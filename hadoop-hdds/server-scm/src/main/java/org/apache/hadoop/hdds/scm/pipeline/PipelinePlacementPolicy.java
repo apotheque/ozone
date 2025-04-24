@@ -18,8 +18,6 @@
 
 package org.apache.hadoop.hdds.scm.pipeline;
 
-import static org.apache.hadoop.hdds.scm.exceptions.SCMException.ResultCodes.INVALID_CAPACITY;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import java.util.ArrayList;
@@ -34,13 +32,14 @@ import org.apache.hadoop.hdds.protocol.DatanodeDetails;
 import org.apache.hadoop.hdds.protocol.proto.HddsProtos.ReplicationFactor;
 import org.apache.hadoop.hdds.scm.SCMCommonPlacementPolicy;
 import org.apache.hadoop.hdds.scm.ScmConfigKeys;
-import org.apache.hadoop.hdds.scm.ScmUtils;
 import org.apache.hadoop.hdds.scm.exceptions.SCMException;
 import org.apache.hadoop.hdds.scm.net.NetworkTopology;
 import org.apache.hadoop.hdds.scm.node.NodeManager;
 import org.apache.hadoop.hdds.scm.node.NodeStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.hadoop.hdds.scm.exceptions.SCMException.ResultCodes.INVALID_CAPACITY;
 
 /**
  * Pipeline placement policy that choose datanodes based on load balancing
@@ -54,18 +53,18 @@ import org.slf4j.LoggerFactory;
  */
 public final class PipelinePlacementPolicy extends SCMCommonPlacementPolicy {
   @VisibleForTesting
-  static final Logger LOG =
-      LoggerFactory.getLogger(PipelinePlacementPolicy.class);
-  private final NodeManager nodeManager;
-  private final PipelineStateManager stateManager;
-  private final ConfigurationSource conf;
-  private final int heavyNodeCriteria;
+  static final Logger LOG = LoggerFactory.getLogger(PipelinePlacementPolicy.class);
+
   private static final int REQUIRED_RACKS = 2;
 
   public static final String MULTIPLE_RACK_PIPELINE_MSG =
       "The cluster has multiple racks, but all nodes with available " +
-      "pipeline capacity are on a single rack. There are insufficient " +
-      "cross rack nodes available to create a pipeline";
+          "pipeline capacity are on a single rack. There are insufficient " +
+          "cross rack nodes available to create a pipeline";
+
+  private final NodeManager nodeManager;
+  private final PipelineStateManager stateManager;
+  private final int heavyNodeCriteria;
 
   /**
    * Constructs a pipeline placement with considering network topology,
@@ -75,12 +74,13 @@ public final class PipelinePlacementPolicy extends SCMCommonPlacementPolicy {
    * @param stateManager PipelineStateManagerImpl
    * @param conf        Configuration
    */
-  public PipelinePlacementPolicy(final NodeManager nodeManager,
-                                 final PipelineStateManager stateManager,
-                                 final ConfigurationSource conf) {
+  public PipelinePlacementPolicy(
+      NodeManager nodeManager,
+      PipelineStateManager stateManager,
+      ConfigurationSource conf
+  ) {
     super(nodeManager, conf);
     this.nodeManager = nodeManager;
-    this.conf = conf;
     this.stateManager = stateManager;
     String dnLimit = conf.get(ScmConfigKeys.OZONE_DATANODE_PIPELINE_LIMIT);
     this.heavyNodeCriteria = dnLimit == null ? 0 : Integer.parseInt(dnLimit);
@@ -317,8 +317,8 @@ public final class PipelinePlacementPolicy extends SCMCommonPlacementPolicy {
     Map<String, List<DatanodeDetails>> nodesPerDatacenter = datacenters.stream()
         .collect(Collectors.toMap(dc -> dc, dc -> new ArrayList<>()));
     for (DatanodeDetails node : healthyNodes) {
-      Map<String, String> dcMap = ScmUtils.getDcMapping(conf);
-      String nodeDc = node.getDc(dcMap);
+      String nodeDc = nodeManager.getClusterNetworkTopologyMap().getRegionAncestor(node).getNetworkFullPath();
+
       if (nodesPerDatacenter.containsKey(nodeDc) && nodesPerDatacenter.get(nodeDc).size() < nodesRequiredPerDc) {
         nodesPerDatacenter.get(nodeDc).add(node);
       }

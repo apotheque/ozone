@@ -16,11 +16,13 @@
  */
 package org.apache.hadoop.ozone.container.placement;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.hadoop.hdds.conf.OzoneConfiguration;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
 import org.apache.hadoop.hdds.scm.container.MockNodeManager;
@@ -30,9 +32,7 @@ import org.apache.hadoop.hdds.scm.exceptions.SCMException;
 import org.apache.hadoop.hdds.scm.node.NodeManager;
 import org.apache.hadoop.hdds.scm.node.NodeStatus;
 import org.apache.hadoop.ozone.OzoneConsts;
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.junit.jupiter.api.Assertions;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -82,8 +82,7 @@ public class TestContainerPlacement {
         new OzoneConfiguration(),
         null, true, null);
     SCMContainerPlacementRandom randomPlacer = new
-        SCMContainerPlacementRandom(nodeManagerRandom, new OzoneConfiguration(),
-        null, true, null);
+        SCMContainerPlacementRandom(nodeManagerRandom, new OzoneConfiguration(), null, false, null);
 
     for (int x = 0; x < opsCount; x++) {
       long containerSize = random.nextInt(10) * OzoneConsts.GB;

@@ -17,19 +17,25 @@
  */
 package org.apache.hadoop.ozone.client.rpc;
 
+import static org.apache.hadoop.hdds.DFSConfigKeysLegacy.NET_TOPOLOGY_NODE_SWITCH_MAPPING_IMPL_KEY;
+import static org.apache.hadoop.hdds.HddsConfigKeys.HDDS_SCM_BACKGROUND_PIPELINE_CREATOR_ENABLED;
+import static org.apache.hadoop.hdds.HddsConfigKeys.HDDS_SCM_SAFEMODE_PIPELINE_AVAILABILITY_CHECK;
+import static org.apache.hadoop.hdds.HddsConfigKeys.OZONE_METADATA_DIRS;
+import static org.apache.hadoop.hdds.client.ReplicationType.RATIS;
+import static org.apache.hadoop.hdds.scm.ScmConfigKeys.OZONE_SCM_PIPELINE_AUTO_CREATE_FACTOR_ONE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.hadoop.conf.StorageUnit;
 import org.apache.hadoop.hdds.client.DefaultReplicationConfig;
 import org.apache.hadoop.hdds.client.ReplicationConfig;
@@ -40,6 +46,7 @@ import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
 import org.apache.hadoop.hdds.scm.container.ContainerInfo;
 import org.apache.hadoop.hdds.scm.protocolPB.StorageContainerLocationProtocolClientSideTranslatorPB;
 import org.apache.hadoop.ozone.MiniOzoneCluster;
+import org.apache.hadoop.ozone.OzoneConfigKeys;
 import org.apache.hadoop.ozone.OzoneConsts;
 import org.apache.hadoop.ozone.client.BucketArgs;
 import org.apache.hadoop.ozone.client.ObjectStore;
@@ -52,23 +59,11 @@ import org.apache.hadoop.ozone.client.io.OzoneDataStreamOutput;
 import org.apache.hadoop.ozone.client.io.OzoneInputStream;
 import org.apache.hadoop.ozone.client.io.OzoneOutputStream;
 import org.apache.hadoop.ozone.om.OzoneManager;
+import org.apache.hadoop.ozone.om.helpers.BucketLayout;
 import org.apache.hadoop.ozone.om.helpers.OmKeyArgs;
 import org.apache.hadoop.ozone.om.helpers.OmKeyInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyLocationInfo;
-import org.apache.hadoop.ozone.om.helpers.BucketLayout;
 import org.apache.ozone.test.GenericTestUtils;
-
-import static org.apache.hadoop.hdds.HddsConfigKeys.HDDS_SCM_BACKGROUND_PIPELINE_CREATOR_ENABLED;
-import static org.apache.hadoop.hdds.HddsConfigKeys.OZONE_METADATA_DIRS;
-import static org.apache.hadoop.hdds.HddsConfigKeys.HDDS_SCM_SAFEMODE_PIPELINE_AVAILABILITY_CHECK;
-import static org.apache.hadoop.hdds.client.ReplicationType.RATIS;
-import static org.apache.hadoop.hdds.scm.ScmConfigKeys.OZONE_SCM_DC_DATANODE_MAPPING_KEY;
-import static org.apache.hadoop.hdds.scm.ScmConfigKeys.OZONE_SCM_PIPELINE_AUTO_CREATE_FACTOR_ONE;
-import static org.apache.hadoop.ozone.OzoneConfigKeys.HDDS_CONTAINER_RATIS_IPC_PORT;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Timeout;
@@ -105,7 +100,8 @@ class TestCrossDCKeyWrite {
     conf.setBoolean(HDDS_SCM_BACKGROUND_PIPELINE_CREATOR_ENABLED, false);
     conf.setBoolean(HDDS_SCM_SAFEMODE_PIPELINE_AVAILABILITY_CHECK, false);
     conf.setBoolean(OZONE_SCM_PIPELINE_AUTO_CREATE_FACTOR_ONE, false);
-    conf.set(OZONE_SCM_DC_DATANODE_MAPPING_KEY, "localhost:0=dc1,localhost:1=dc2,localhost:2=dc3");
+    conf.setInt(OzoneConfigKeys.OZONE_NETWORK_TOPOLOGY_CLUSTER_SEPARATION_LEVEL, 2);
+    conf.set(NET_TOPOLOGY_NODE_SWITCH_MAPPING_IMPL_KEY, "org.apache.hadoop.ozone.net.RandomMappingGenerator");
     int nodesPerDc = 6;
     cluster = MiniOzoneCluster.newBuilder(conf)
         .setNumDatanodes(nodesPerDc * 3) // 3 DC.
@@ -114,30 +110,6 @@ class TestCrossDCKeyWrite {
         .setBlockSize(BLOCK_SIZE)
         .setChunkSize(CHUNK_SIZE)
         .setStreamBufferSizeUnit(StorageUnit.BYTES)
-        .setDatanodesCreatedCallback((hddsDatanodes, configuration) -> {
-          List<String> dns = hddsDatanodes.stream()
-              .map(dn -> {
-                int ratisPort = Integer.parseInt(dn.getConf().get(HDDS_CONTAINER_RATIS_IPC_PORT));
-                String host;
-                try {
-                  host = InetAddress.getLocalHost().getHostAddress();
-                } catch (UnknownHostException e) {
-                  throw new RuntimeException(e);
-                }
-                return host + ":" + ratisPort;
-              })
-              .collect(Collectors.toList());
-
-          StringBuilder sb = new StringBuilder();
-          for (int i = 0; i < dns.size(); i++) {
-            if (sb.length() > 0) {
-              sb.append(",");
-            }
-            sb.append(dns.get(i)).append("=dc").append(i / nodesPerDc + 1);
-          }
-          configuration.set(OZONE_SCM_DC_DATANODE_MAPPING_KEY, sb.toString());
-          conf.set(OZONE_SCM_DC_DATANODE_MAPPING_KEY, sb.toString());
-        })
         .build();
     cluster.waitForClusterToBeReady();
     ozClient = OzoneClientFactory.getRpcClient(conf);

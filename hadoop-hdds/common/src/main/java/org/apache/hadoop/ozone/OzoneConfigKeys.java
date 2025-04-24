@@ -588,6 +588,11 @@ public final class OzoneConfigKeys {
   public static final boolean OZONE_JVM_NETWORK_ADDRESS_CACHE_ENABLED_DEFAULT =
           true;
 
+  public static final String OZONE_NETWORK_TOPOLOGY_CLUSTER_SEPARATION_LEVEL =
+          "ozone.network.topology.cluster.separation.level";
+
+  public static final int OZONE_NETWORK_TOPOLOGY_CLUSTER_SEPARATION_LEVEL_DEFAULT = -1;
+
   public static final String OZONE_CLIENT_REQUIRED_OM_VERSION_MIN_KEY =
       "ozone.client.required.om.version.min";
 

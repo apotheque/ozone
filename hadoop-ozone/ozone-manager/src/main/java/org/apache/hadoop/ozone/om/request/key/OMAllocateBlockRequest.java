@@ -18,8 +18,18 @@
 
 package org.apache.hadoop.ozone.om.request.key;
 
+import static java.util.Collections.emptySet;
+import static org.apache.hadoop.ozone.om.exceptions.OMException.ResultCodes.KEY_NOT_FOUND;
+import static org.apache.hadoop.ozone.om.lock.OzoneManagerLock.Resource.BUCKET_LOCK;
+import static org.apache.hadoop.ozone.om.request.DatacenterUtils.resolveDatacenterMetadata;
+
 import com.google.common.base.Preconditions;
-import org.apache.commons.lang3.StringUtils;
+import java.io.IOException;
+import java.nio.file.InvalidPathException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.apache.hadoop.hdds.client.ReplicationConfig;
 import org.apache.hadoop.hdds.scm.container.common.helpers.ExcludeList;
 import org.apache.hadoop.hdds.utils.db.cache.CacheKey;
@@ -57,18 +67,6 @@ import org.apache.hadoop.util.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.nio.file.InvalidPathException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static org.apache.hadoop.ozone.om.exceptions.OMException.ResultCodes.KEY_NOT_FOUND;
-import static org.apache.hadoop.ozone.om.lock.OzoneManagerLock.Resource.BUCKET_LOCK;
-
 /**
  * Handles allocate block request.
  */
@@ -104,11 +102,9 @@ public class OMAllocateBlockRequest extends OMKeyRequest {
     OmBucketInfo omBucketInfo = getBucketInfo(ozoneManager.getMetadataManager(), keyArgs.getVolumeName(),
         keyArgs.getBucketName());
 
-    Set<String> datacenters = Collections.emptySet();
-    String datacentersMetadata = omBucketInfo != null ? omBucketInfo.getMetadata().get(OzoneConsts.DATACENTERS) : null;
-    if (StringUtils.isNotEmpty(datacentersMetadata)) {
-      datacenters = Arrays.stream(datacentersMetadata.split(",")).collect(Collectors.toSet());
-    }
+    Set<String> datacenters = omBucketInfo != null
+        ? resolveDatacenterMetadata(omBucketInfo.getMetadata().get(OzoneConsts.DATACENTERS))
+        : emptySet();
 
     // TODO: Here we are allocating block with out any check for key exist in
     //  open table or not and also with out any authorization checks.

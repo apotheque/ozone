@@ -17,6 +17,15 @@
  */
 package org.apache.hadoop.hdds.scm.container.replication;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hdds.client.ReplicationConfig;
 import org.apache.hadoop.hdds.conf.ConfigurationSource;
@@ -27,12 +36,13 @@ import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerDatanodeProtocolProtos.ContainerReplicaProto;
 import org.apache.hadoop.hdds.scm.PlacementPolicy;
 import org.apache.hadoop.hdds.scm.SCMCommonPlacementPolicy;
-import org.apache.hadoop.hdds.scm.ScmUtils;
 import org.apache.hadoop.hdds.scm.container.ContainerID;
 import org.apache.hadoop.hdds.scm.container.ContainerInfo;
 import org.apache.hadoop.hdds.scm.container.ContainerReplica;
 import org.apache.hadoop.hdds.scm.container.TestContainerInfo;
 import org.apache.hadoop.hdds.scm.exceptions.SCMException;
+import org.apache.hadoop.hdds.scm.net.NetworkTopology;
+import org.apache.hadoop.hdds.scm.net.NetworkTopologyImpl;
 import org.apache.hadoop.hdds.scm.net.Node;
 import org.apache.hadoop.hdds.scm.node.NodeManager;
 import org.apache.hadoop.ozone.protocol.commands.DeleteContainerCommand;
@@ -43,19 +53,13 @@ import org.apache.ratis.protocol.exceptions.NotLeaderException;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.mapping;
 import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.NodeOperationalState.IN_SERVICE;
 import static org.apache.hadoop.hdds.protocol.proto.StorageContainerDatanodeProtocolProtos.ContainerReplicaProto.State.CLOSED;
 import static org.apache.hadoop.hdds.scm.exceptions.SCMException.ResultCodes.FAILED_TO_FIND_SUITABLE_NODE;
+import static org.apache.hadoop.ozone.OzoneConfigKeys.OZONE_NETWORK_TOPOLOGY_CLUSTER_SEPARATION_LEVEL;
+import static org.apache.hadoop.ozone.OzoneConfigKeys.OZONE_NETWORK_TOPOLOGY_CLUSTER_SEPARATION_LEVEL_DEFAULT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -102,24 +106,34 @@ public final class ReplicationTestUtil {
     return replicas;
   }
 
-  public static Set<ContainerReplica> createReplicasAcrossDcs(ContainerID containerID,
-                                                              ContainerReplicaProto.State replicaState,
-                                                              ConfigurationSource conf) {
+  private static String getAncestorPath(Node node, NetworkTopology networkTopology, int cutoffLevel) {
+    return networkTopology.getAncestor(node, networkTopology.getMaxLevel() - cutoffLevel).getNetworkFullPath();
+  }
+
+  public static Set<ContainerReplica> createReplicasAcrossDcs(
+      ContainerID containerID,
+      ContainerReplicaProto.State replicaState,
+      ConfigurationSource conf,
+      NetworkTopology networkTopology
+  ) {
     Set<ContainerReplica> replicas = new HashSet<>();
-    Map<String, List<String>> nodesByDc = ScmUtils.getDcMapping(conf).entrySet()
+
+    int clusterSeparationLevel = conf.getInt(
+        OZONE_NETWORK_TOPOLOGY_CLUSTER_SEPARATION_LEVEL,
+        OZONE_NETWORK_TOPOLOGY_CLUSTER_SEPARATION_LEVEL_DEFAULT
+    );
+
+    Map<String, List<Node>> nodesByDc = networkTopology.getNodes(networkTopology.getMaxLevel())
         .stream()
         .collect(Collectors.groupingBy(
-            Map.Entry::getValue,
-            Collectors.mapping(Map.Entry::getKey, Collectors.toList())
+            node -> getAncestorPath(node, networkTopology, clusterSeparationLevel),
+            mapping(identity(), Collectors.toList())
         ));
 
-    for (Map.Entry<String, List<String>> entry : nodesByDc.entrySet()) {
-      for (String node : entry.getValue()) {
-        String[] parts = node.split(":");
-        String hostname = parts[0];
-        int port = Integer.parseInt(parts[1]);
-        DatanodeDetails datanodeDetails = MockDatanodeDetails.createDatanodeDetails(UUID.randomUUID().toString(),
-            hostname, null, null, port);
+    for (Map.Entry<String, List<Node>> entry : nodesByDc.entrySet()) {
+      for (Node node : entry.getValue()) {
+        DatanodeDetails datanodeDetails = (DatanodeDetails) node;
+
         replicas.add(createContainerReplica(containerID, 0, IN_SERVICE,
             replicaState, 123L, 1234L, datanodeDetails, datanodeDetails.getUuid()));
       }
@@ -524,5 +538,26 @@ public final class ReplicationTestUtil {
       return null;
     }).when(mock)
         .sendThrottledDeleteCommand(any(), anyInt(), any(), anyBoolean());
+  }
+
+  public static NetworkTopology createNetworkTopology(ConfigurationSource conf) {
+    NetworkTopology networkTopology = new NetworkTopologyImpl(conf);
+
+    for (int datanodeId = 0; datanodeId < 6; datanodeId++) {
+      String hostname = "datanode" + datanodeId;
+      int port = 10000 + datanodeId;
+
+      DatanodeDetails datanodeDetails = MockDatanodeDetails.createDatanodeDetails(
+          UUID.randomUUID().toString(),
+          hostname,
+          null,
+          "/dc" + (datanodeId / 2 + 1),
+          port
+      );
+
+      networkTopology.add(datanodeDetails);
+    }
+
+    return networkTopology;
   }
 }
