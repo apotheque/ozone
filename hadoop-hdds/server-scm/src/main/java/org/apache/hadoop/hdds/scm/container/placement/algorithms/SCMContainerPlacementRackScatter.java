@@ -561,7 +561,7 @@ public final class SCMContainerPlacementRackScatter
 
       int datacenterLevel = maxLevel - 2;
       racks = networkTopology.getNodes(datacenterLevel).stream()
-          .filter(node -> node instanceof InnerNode && datacenters.contains(node.getNetworkName()))
+          .filter(node -> node instanceof InnerNode && datacenters.contains(node.getNetworkFullPath()))
           .flatMap(node -> ((InnerNode) node).getNodes(2).stream())
           .collect(Collectors.toList());
     } else {

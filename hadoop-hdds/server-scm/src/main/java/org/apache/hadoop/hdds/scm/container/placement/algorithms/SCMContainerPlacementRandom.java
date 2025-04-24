@@ -93,7 +93,7 @@ public final class SCMContainerPlacementRandom extends SCMCommonPlacementPolicy
                 nodesRequired, metadataSizeRequired, dataSizeRequired);
     if (!datacenters.isEmpty()) {
       healthyNodes = healthyNodes.stream()
-          .filter(node -> datacenters.contains(networkTopology.getRegionAncestor(node).getNetworkName()))
+          .filter(node -> datacenters.contains(networkTopology.getRegionAncestor(node).getNetworkFullPath()))
           .collect(Collectors.toList());
     }
     if (healthyNodes.size() == nodesRequired) {
