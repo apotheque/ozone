@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -452,6 +453,17 @@ public class TestSCMContainerPlacementRackScatter {
     Assertions.assertEquals(nodeNum, datanodeDetails.size());
     Assertions.assertNotEquals(datanodeDetails.get(0).getNetworkFullPath(),
         favoredNodes.get(0).getNetworkFullPath());
+  }
+
+  @Test
+  public void chooseNodeWithDcThrowsIllegalStateExceptionWhenNoDcLevelPresent() {
+    int nodesPerRack = 2;
+    setup(nodesPerRack);
+
+    IllegalStateException exception = Assertions.assertThrows(IllegalStateException.class, () -> policy.chooseDatanodes(
+        Collections.emptyList(), Collections.emptyList(), Collections.singleton("/dc1"), 1, 0, 15));
+    Assertions.assertEquals("Can't find racks within requested datacenters, " +
+        "because topology doesn't have a datacenter level.", exception.getMessage());
   }
 
   @ParameterizedTest
