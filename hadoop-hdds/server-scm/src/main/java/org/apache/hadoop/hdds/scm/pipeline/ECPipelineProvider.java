@@ -86,12 +86,12 @@ public class ECPipelineProvider extends PipelineProvider<ECReplicationConfig> {
     List<DatanodeDetails> dns = placementPolicy
         .chooseDatanodes(excludedNodes, favoredNodes, datacenters,
             replicationConfig.getRequiredNodes(), 0, this.containerSizeBytes);
-    return create(replicationConfig, dns);
+    return create(replicationConfig, dns, datacenters);
   }
 
   @Override
   protected Pipeline create(ECReplicationConfig replicationConfig,
-      List<DatanodeDetails> nodes) {
+      List<DatanodeDetails> nodes, Set<String> datacenters) {
 
     Map<DatanodeDetails, Integer> dnIndexes = new HashMap<>();
     int ecIndex = 1;
@@ -100,7 +100,7 @@ public class ECPipelineProvider extends PipelineProvider<ECReplicationConfig> {
       ecIndex++;
     }
 
-    return createPipelineInternal(replicationConfig, nodes, dnIndexes);
+    return createPipelineInternal(replicationConfig, nodes, dnIndexes, datacenters);
   }
 
   @Override
@@ -127,17 +127,18 @@ public class ECPipelineProvider extends PipelineProvider<ECReplicationConfig> {
 
     dns.sort(Comparator.comparing(nodeStatusMap::get));
 
-    return createPipelineInternal(replicationConfig, dns, map);
+    return createPipelineInternal(replicationConfig, dns, map, Collections.emptySet());
   }
 
   private Pipeline createPipelineInternal(ECReplicationConfig repConfig,
-      List<DatanodeDetails> dns, Map<DatanodeDetails, Integer> indexes) {
+      List<DatanodeDetails> dns, Map<DatanodeDetails, Integer> indexes, Set<String> datacenters) {
     return Pipeline.newBuilder()
         .setId(PipelineID.randomId())
         .setState(Pipeline.PipelineState.ALLOCATED)
         .setReplicationConfig(repConfig)
         .setNodes(dns)
         .setReplicaIndexes(indexes)
+        .setDatacenters(datacenters)
         .build();
   }
 

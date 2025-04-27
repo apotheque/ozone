@@ -43,6 +43,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -130,7 +131,7 @@ public class TestSimplePipelineProvider {
     HddsProtos.ReplicationFactor factor = HddsProtos.ReplicationFactor.THREE;
     Pipeline pipeline =
         provider.create(StandaloneReplicationConfig.getInstance(factor),
-            createListOfNodes(factor.getNumber()));
+            createListOfNodes(factor.getNumber()), Collections.emptySet());
     Assertions.assertEquals(pipeline.getType(),
         HddsProtos.ReplicationType.STAND_ALONE);
     Assertions.assertEquals(
@@ -142,7 +143,7 @@ public class TestSimplePipelineProvider {
 
     factor = HddsProtos.ReplicationFactor.ONE;
     pipeline = provider.create(StandaloneReplicationConfig.getInstance(factor),
-        createListOfNodes(factor.getNumber()));
+        createListOfNodes(factor.getNumber()), Collections.emptySet());
     Assertions.assertEquals(pipeline.getType(),
         HddsProtos.ReplicationType.STAND_ALONE);
     Assertions.assertEquals(

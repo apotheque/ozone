@@ -34,6 +34,7 @@ import org.apache.hadoop.hdds.server.events.EventPublisher;
 
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -112,7 +113,7 @@ public class PipelineFactory {
       List<DatanodeDetails> nodes
   ) {
     return providers.get(replicationConfig.getReplicationType())
-        .create(replicationConfig, nodes);
+        .create(replicationConfig, nodes, Collections.emptySet());
   }
 
   public Pipeline createForRead(ReplicationConfig replicationConfig,

@@ -221,12 +221,13 @@ public class RatisPipelineProvider
 
   @Override
   public Pipeline create(RatisReplicationConfig replicationConfig,
-      List<DatanodeDetails> nodes) {
+      List<DatanodeDetails> nodes, Set<String> datacenters) {
     return Pipeline.newBuilder()
         .setId(PipelineID.randomId())
         .setState(PipelineState.ALLOCATED)
         .setReplicationConfig(replicationConfig)
         .setNodes(nodes)
+        .setDatacenters(datacenters)
         .build();
   }
 
@@ -237,7 +238,8 @@ public class RatisPipelineProvider
     return create(replicationConfig, replicas
         .stream()
         .map(ContainerReplica::getDatanodeDetails)
-        .collect(Collectors.toList()));
+        .collect(Collectors.toList()),
+        Collections.emptySet());
   }
 
   private List<DatanodeDetails> filterPipelineEngagement() {

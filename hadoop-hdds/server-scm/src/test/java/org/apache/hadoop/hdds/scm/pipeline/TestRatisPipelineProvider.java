@@ -208,13 +208,13 @@ public class TestRatisPipelineProvider {
     HddsProtos.ReplicationFactor factor = HddsProtos.ReplicationFactor.THREE;
     Pipeline pipeline =
         provider.create(RatisReplicationConfig.getInstance(factor),
-            createListOfNodes(factor.getNumber()));
+            createListOfNodes(factor.getNumber()), Collections.emptySet());
     assertPipelineProperties(pipeline, factor, REPLICATION_TYPE,
         Pipeline.PipelineState.OPEN);
 
     factor = HddsProtos.ReplicationFactor.ONE;
     pipeline = provider.create(RatisReplicationConfig.getInstance(factor),
-        createListOfNodes(factor.getNumber()));
+        createListOfNodes(factor.getNumber()), Collections.emptySet());
     assertPipelineProperties(pipeline, factor, REPLICATION_TYPE,
         Pipeline.PipelineState.OPEN);
   }
@@ -230,10 +230,10 @@ public class TestRatisPipelineProvider {
 
     Pipeline pipeline1 = provider.create(
         RatisReplicationConfig.getInstance(ReplicationFactor.THREE),
-        healthyNodes);
+        healthyNodes, Collections.emptySet());
     Pipeline pipeline2 = provider.create(
         RatisReplicationConfig.getInstance(ReplicationFactor.THREE),
-        healthyNodes);
+        healthyNodes, Collections.emptySet());
     Pipeline pipeline3 = provider.createForRead(
         RatisReplicationConfig.getInstance(ReplicationFactor.THREE),
         replicas);

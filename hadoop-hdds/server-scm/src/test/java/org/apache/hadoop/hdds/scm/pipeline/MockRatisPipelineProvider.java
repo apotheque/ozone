@@ -20,6 +20,7 @@ package org.apache.hadoop.hdds.scm.pipeline;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.hadoop.hdds.client.RatisReplicationConfig;
 import org.apache.hadoop.hdds.client.ReplicationConfig;
@@ -100,12 +101,13 @@ public class MockRatisPipelineProvider extends RatisPipelineProvider {
 
   @Override
   public Pipeline create(RatisReplicationConfig replicationConfig,
-      List<DatanodeDetails> nodes) {
+      List<DatanodeDetails> nodes, Set<String> datacenters) {
     return Pipeline.newBuilder()
         .setId(PipelineID.randomId())
         .setState(Pipeline.PipelineState.OPEN)
         .setReplicationConfig(replicationConfig)
         .setNodes(nodes)
+        .setDatacenters(datacenters)
         .build();
   }
 }
