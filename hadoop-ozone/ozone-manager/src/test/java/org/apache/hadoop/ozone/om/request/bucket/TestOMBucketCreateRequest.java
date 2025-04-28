@@ -19,10 +19,14 @@
 
 package org.apache.hadoop.ozone.om.request.bucket;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 import org.apache.hadoop.hdds.client.DefaultReplicationConfig;
 import org.apache.hadoop.hdds.client.ECReplicationConfig;
+import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
+import org.apache.hadoop.ozone.OzoneConsts;
 import org.apache.hadoop.ozone.om.OMConfigKeys;
 import org.apache.hadoop.ozone.om.exceptions.OMException;
 import org.apache.hadoop.ozone.om.helpers.BucketLayout;
@@ -145,6 +149,37 @@ public class TestOMBucketCreateRequest extends TestBucketRequest {
     Assertions.assertNotNull(omResponse.getCreateBucketResponse());
     Assertions.assertEquals(OzoneManagerProtocolProtos.Status
             .BUCKET_ALREADY_EXISTS, omResponse.getStatus());
+  }
+
+  @Test
+  public void testValidateAndUpdateCacheWithECAndMultipleDc() throws Exception {
+    String volumeName = UUID.randomUUID().toString();
+    String bucketName = UUID.randomUUID().toString();
+    String datacentersMetadata = "dc1,dc2,dc3";
+    long quota = 100;
+
+    OMRequestTestUtils.addVolumeToDB(volumeName, omMetadataManager, quota);
+
+    List<HddsProtos.KeyValue> metadataList = Collections.singletonList(HddsProtos.KeyValue.newBuilder()
+        .setKey(OzoneConsts.DATACENTERS)
+        .setValue(datacentersMetadata)
+        .build());
+
+    OzoneManagerProtocolProtos.BucketInfo.Builder bucketInfo = newBucketInfoBuilder(bucketName, volumeName)
+        .addAllMetadata(metadataList)
+        .setQuotaInBytes(quota)
+        .setDefaultReplicationConfig(
+            new DefaultReplicationConfig(new ECReplicationConfig(3, 2)).toProto());
+
+    OMBucketCreateRequest omBucketCreateRequest =
+        new OMBucketCreateRequest(newCreateBucketRequest(bucketInfo).build());
+
+    OMClientResponse omClientResponse = omBucketCreateRequest.validateAndUpdateCache(ozoneManager, 1);
+
+    OMResponse omResponse = omClientResponse.getOMResponse();
+    Assertions.assertNotNull(omResponse.getCreateBucketResponse());
+    Assertions.assertEquals(OzoneManagerProtocolProtos.Status
+        .TOO_MANY_DATACENTERS, omResponse.getStatus());
   }
 
   @Test
