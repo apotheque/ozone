@@ -186,7 +186,7 @@ public class TestECPipelineProvider {
   }
 
   @Test
-  public void testExcludedAndFavoredNodesPassedToPlacementPolicy()
+  public void testExcludedAndFavoredNodesAndDatacentersPassedToPlacementPolicy()
       throws IOException {
     ECReplicationConfig ecConf = new ECReplicationConfig(3, 2);
 
@@ -196,12 +196,14 @@ public class TestECPipelineProvider {
     List<DatanodeDetails> favoredNodes = new ArrayList<>();
     favoredNodes.add(MockDatanodeDetails.randomDatanodeDetails());
 
-    Pipeline pipeline = provider.create(ecConf, excludedNodes, favoredNodes, Collections.emptySet());
+    Set<String> datacenters = Collections.singleton("dc1");
+
+    Pipeline pipeline = provider.create(ecConf, excludedNodes, favoredNodes, datacenters);
     Assertions.assertEquals(EC, pipeline.getType());
     Assertions.assertEquals(ecConf.getData() + ecConf.getParity(),
         pipeline.getNodes().size());
 
-    verify(placementPolicy).chooseDatanodes(excludedNodes, favoredNodes, Collections.emptySet(),
+    verify(placementPolicy).chooseDatanodes(excludedNodes, favoredNodes, datacenters,
         ecConf.getRequiredNodes(), 0, containerSizeBytes);
   }
 
