@@ -1888,9 +1888,7 @@ public class KeyManagerImpl implements KeyManager {
             LOG.debug("Found sorted datanodes for pipeline {} and client {} "
                 + "in cache", pipeline.getId(), clientMachine);
           }
-          if (!Objects.equals(pipeline.getNodesInOrder(), sortedNodes)) {
-            k.setPipeline(pipeline.copyWithNodesInOrder(sortedNodes));
-          }
+          k.setPipeline(pipeline.copyWithNodesInOrder(sortedNodes));
         }
       }
     }
