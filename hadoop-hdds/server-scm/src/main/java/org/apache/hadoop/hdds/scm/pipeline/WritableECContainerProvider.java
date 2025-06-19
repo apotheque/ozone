@@ -124,6 +124,7 @@ public class WritableECContainerProvider
     PipelineRequestInformation pri =
         PipelineRequestInformation.Builder.getBuilder()
             .setSize(size)
+            .setDatacenters(datacenters)
             .build();
     while (existingPipelines.size() > 0) {
       int pipelineIndex =
